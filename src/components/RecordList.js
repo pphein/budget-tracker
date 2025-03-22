@@ -93,8 +93,8 @@ const RecordList = ({ type, records, handleDeleteTransaction, handleEditTransact
             year: "numeric",
             month: "long",
             day: "2-digit",
-            hour: "2-digit",
-            minute: "2-digit",
+            // hour: "2-digit",
+            // minute: "2-digit",
         });
         
       };
@@ -141,7 +141,7 @@ const RecordList = ({ type, records, handleDeleteTransaction, handleEditTransact
                         className="bg-green-500 text-white px-4 py-2 rounded mt-4"
                         onClick={exportToExcel}
                     >
-                        Export to Excel
+                        Export
                     </button>
                         </td>
                     </tr>

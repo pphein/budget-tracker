@@ -209,7 +209,7 @@ const App = () => {
                 </div>
                 <div>
                   <button onClick={handleAddTransaction} type="submit" className={`w-full ${tab === 'income' ? 'bg-green-500' : 'bg-red-500'} text-white p-2 rounded`}>
-                  {tab === 'income' ? 'Add Income Record' : 'Add Expense Record'}
+                  {tab === 'income' ? 'Save' : 'Save'}
                 </button>
                 </div>
               </div>
