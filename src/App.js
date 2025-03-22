@@ -199,12 +199,58 @@ const App = () => {
               <div className='flex space-x-2 flex-row justify-between items-end'>
                 <div>
                   <label className="block">Amount:</label>
-                  <input
+                  {/* <input
                     type="number"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                     className="w-full p-2 border rounded"
                     required
+                    onKeyDown={(e) => {
+                      const allowedKeys = ['+', '-', '*', '/'];
+                      if (!/[0-9]/.test(e.key) && !allowedKeys.includes(e.key) && e.key !== 'Backspace') {
+                        e.preventDefault();
+                      }
+                      if (allowedKeys.includes(e.key)) {
+                        try {
+                          const result = eval(amount + e.key);
+                          setAmount(result.toString());
+                          e.preventDefault();
+                        } catch {
+                          e.preventDefault();
+                        }
+                      }
+                    }}
+                    onBlur={(e) => {
+                      try {
+                        const result = eval(e.target.value);
+                        if (!isNaN(result)) {
+                          setAmount(result.toString());
+                        }
+                      } catch {
+                        alert("Invalid expression");
+                      }
+                    }}
+                  /> */}
+                  <input
+                    type="text"
+                    value={amount}
+                    onChange={(e) => {
+                      const input = e.target.value;
+                      if (/^[0-9+\s]*$/.test(input)) {
+                        setAmount(input);
+                      }
+                    }}
+                    onBlur={(e) => {
+                      try {
+                        const result = eval(e.target.value.replace(/\s+/g, ''));
+                        if (!isNaN(result)) {
+                          setAmount(result.toString());
+                        }
+                      } catch {
+                        alert("Invalid expression");
+                      }
+                    }}
+                    className="w-full p-2 border rounded"
                   />
                 </div>
                 <div>
