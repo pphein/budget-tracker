@@ -91,13 +91,20 @@ const RecordList = ({ type, records, handleDeleteTransaction, handleEditTransact
         dateObj.setMinutes(dateObj.getMinutes() + 392); // Add 390 minutes (6 hours and 30 minutes)
         return dateObj.toLocaleString("en-US", {
             year: "numeric",
-            month: "long",
+            month: "numeric",
             day: "2-digit",
             // hour: "2-digit",
             // minute: "2-digit",
         });
         
       };
+    
+    const formatAmount = (amount) => {
+        return new Intl.NumberFormat("en-US", {
+            // style: "currency",
+            // currency: "MMK",
+        }).format(amount);  
+    }
 
     return (
         <div className='w-container'>
@@ -115,7 +122,7 @@ const RecordList = ({ type, records, handleDeleteTransaction, handleEditTransact
                         filteredRecords.map((record, index) => (
                             <tr key={index}>
                                 <td className="border border-gray-300 px-4 py-2">{record.tag}</td>
-                                <td className="border border-gray-300 px-4 py-2">${record.amount}</td>
+                                <td className="border border-gray-300 px-4 py-2 text-end">{formatAmount(record.amount)}</td>
                                 <td className="border border-gray-300 px-4 py-2">{formatDateTime(record.date)}</td>
                                 <td className="border border-gray-300 px-4 py-2">
                                     <button className="bg-blue-500 text-white px-2 py-1 rounded" onClick={() => handleEditTransaction(record.id, record)}>Edit</button>
