@@ -280,18 +280,20 @@ const App = () => {
                 </div>
               </div> */}
             </div>
-            <Filter
-                tags={tags}
-                selectedTag={selectedTag}
-                setSelectedTag={setSelectedTag}
-                startDate={startDate}
-                setStartDate={setStartDate}
-                endDate={formatDateTime(endDate)}
-                setEndDate={setEndDate}
-                formatDateTime={formatDateTime}
-            />
+            <div className='bg-gray-200 p-4 mt-4'>
+              <Filter
+                  tags={tags}
+                  selectedTag={selectedTag}
+                  setSelectedTag={setSelectedTag}
+                  startDate={startDate}
+                  setStartDate={setStartDate}
+                  endDate={formatDateTime(endDate)}
+                  setEndDate={setEndDate}
+                  formatDateTime={formatDateTime}
+              />
 
-            <RecordList className="mt-16" type={type} records={filteredRecords} handleDeleteTransaction={handleDeleteTransaction} handleEditTransaction={handleEditTransaction} />
+              <RecordList className="mt-16" type={type} records={filteredRecords} handleDeleteTransaction={handleDeleteTransaction} handleEditTransaction={handleEditTransaction} />
+            </div>
             {/* <div className="my-4">
               <button
                 onClick={() => {
