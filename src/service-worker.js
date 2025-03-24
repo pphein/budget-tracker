@@ -1,3 +1,5 @@
+/* eslint-disable no-restricted-globals */
+
 const CACHE_NAME = "budget-tracker-cache-v1";
 const urlsToCache = [
   "/",
