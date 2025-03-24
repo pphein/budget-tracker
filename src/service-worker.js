@@ -1,4 +1,8 @@
 /* eslint-disable no-restricted-globals */
+import { precacheAndRoute } from 'workbox-precaching';
+
+// This ensures that the precache manifest is injected correctly
+precacheAndRoute(self.__WB_MANIFEST);
 
 const CACHE_NAME = "budget-tracker-cache-v1";
 const urlsToCache = [
