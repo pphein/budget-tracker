@@ -292,7 +292,7 @@ const App = () => {
                   formatDateTime={formatDateTime}
               />
 
-              <RecordList className="mt-16" type={type} records={filteredRecords} handleDeleteTransaction={handleDeleteTransaction} handleEditTransaction={handleEditTransaction} />
+              <RecordList className="mt-16" type={type} records={filteredRecords} handleDeleteTransaction={handleDeleteTransaction} handleEditTransaction={handleEditTransaction} formatDateTime={formatDateTime} />
             </div>
             {/* <div className="my-4">
               <button

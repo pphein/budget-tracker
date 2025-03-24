@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { saveAs } from 'file-saver';
 import * as XLSX from 'xlsx';
 
-const RecordList = ({ type, records, handleDeleteTransaction, handleEditTransaction }) => {
+const RecordList = ({ type, records, handleDeleteTransaction, handleEditTransaction, formatDateTime }) => {
     // return (
     //     <div>
     //         {records.length > 0 ? (
@@ -101,7 +101,7 @@ const RecordList = ({ type, records, handleDeleteTransaction, handleEditTransact
                             <tr key={index}>
                                 <td className="border border-gray-300 px-4 py-2">{record.tag}</td>
                                 <td className="border border-gray-300 px-4 py-2 text-end">{formatAmount(record.amount)}</td>
-                                <td className="border border-gray-300 px-4 py-2">{record.date}</td>
+                                <td className="border border-gray-300 px-4 py-2">{formatDateTime(record.date)}</td>
                                 <td className="border border-gray-300 px-4 py-2">
                                     <button className="bg-blue-500 text-white px-2 py-1 rounded" onClick={() => handleEditTransaction(record.id, record)}>Edit</button>
                                     <button className="bg-red-500 text-white px-2 py-1 rounded" onClick={() => handleDeleteTransaction(record.id)}>Del</button>
