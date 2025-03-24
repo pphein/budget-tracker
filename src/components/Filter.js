@@ -2,7 +2,7 @@ import React from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
-const Filter = ({ tags, selectedTag, setSelectedTag, startDate, setStartDate, endDate, setEndDate }) => {
+const Filter = ({ tags, selectedTag, setSelectedTag, startDate, setStartDate, endDate, setEndDate, formatDateTime }) => {
 
     return (
         <div className="flex space-x-4">
@@ -32,7 +32,7 @@ const Filter = ({ tags, selectedTag, setSelectedTag, startDate, setStartDate, en
                 onChange={(e) => setEndDate(e.target.value)}
                 className="border px-2 py-1 rounded"
             /> */}
-            <DatePicker selected={endDate} onChange={(endDate) => setEndDate(endDate)} dateFormat="dd-MM-YYYY" showIcon className="w-32 border px-2 py-1 rounded"/>
+            <DatePicker selected={endDate} onChange={(endDate) => setEndDate(formatDateTime(endDate))} dateFormat="dd-MM-YYYY" showIcon className="w-32 border px-2 py-1 rounded"/>
                 
         </div>
     );

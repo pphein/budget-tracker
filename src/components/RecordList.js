@@ -76,28 +76,6 @@ const RecordList = ({ type, records, handleDeleteTransaction, handleEditTransact
 
     const totalAmount = filteredRecords.reduce((sum, record) => sum + Number(record.amount), 0);
 
-    const formatDateTime = (isoString) => {
-        const dateObj = new Date(isoString);
-        // return `${dateObj.toLocaleTimeString("en-US", { 
-        //     timeZone: "Asia/Yangon",
-        //     year: "numeric",
-        //     month: "long",
-        //     day: "2-digit",
-        //     hour: "2-digit",
-        //     minute: "2-digit",
-        // })}`;
-        // return dateObj.toLocaleString();
-        // Adjust the time difference for Asia/Yangon (UTC+6:30)
-        dateObj.setMinutes(dateObj.getMinutes() + 392); // Add 390 minutes (6 hours and 30 minutes)
-        return dateObj.toLocaleString("en-US", {
-            year: "numeric",
-            month: "numeric",
-            day: "2-digit",
-            // hour: "2-digit",
-            // minute: "2-digit",
-        });
-        
-      };
     
     const formatAmount = (amount) => {
         return new Intl.NumberFormat("en-US", {
@@ -123,7 +101,7 @@ const RecordList = ({ type, records, handleDeleteTransaction, handleEditTransact
                             <tr key={index}>
                                 <td className="border border-gray-300 px-4 py-2">{record.tag}</td>
                                 <td className="border border-gray-300 px-4 py-2 text-end">{formatAmount(record.amount)}</td>
-                                <td className="border border-gray-300 px-4 py-2">{formatDateTime(record.date)}</td>
+                                <td className="border border-gray-300 px-4 py-2">{record.date}</td>
                                 <td className="border border-gray-300 px-4 py-2">
                                     <button className="bg-blue-500 text-white px-2 py-1 rounded" onClick={() => handleEditTransaction(record.id, record)}>Edit</button>
                                     <button className="bg-red-500 text-white px-2 py-1 rounded" onClick={() => handleDeleteTransaction(record.id)}>Del</button>

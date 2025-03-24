@@ -107,6 +107,29 @@ const App = () => {
       loadTags();
     }
   
+    const formatDateTime = (isoString) => {
+      const dateObj = new Date(isoString);
+      // return `${dateObj.toLocaleTimeString("en-US", { 
+      //     timeZone: "Asia/Yangon",
+      //     year: "numeric",
+      //     month: "long",
+      //     day: "2-digit",
+      //     hour: "2-digit",
+      //     minute: "2-digit",
+      // })}`;
+      // return dateObj.toLocaleString();
+      // Adjust the time difference for Asia/Yangon (UTC+6:30)
+      dateObj.setMinutes(dateObj.getMinutes() + 392); // Add 390 minutes (6 hours and 30 minutes)
+      return dateObj.toLocaleString("en-US", {
+          year: "numeric",
+          month: "numeric",
+          day: "2-digit",
+          // hour: "2-digit",
+          // minute: "2-digit",
+      });
+      
+    };
+
     // const addTransaction = (e) => {
     //   e.preventDefault();
     //   if (!type || !tag || !amount || !date) return alert("Some fields are required!");
@@ -192,7 +215,7 @@ const App = () => {
                 <div>
                   <label className="block">Date:</label>
                   {/* <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full p-2 border rounded"/> */}
-                  <DatePicker selected={date} onChange={(date) => setDate(date)} dateFormat="dd-MM-YYYY" showIcon className="w-32 p-2 border rounded" />
+                  <DatePicker selected={date} onChange={(date) => setDate(formatDateTime(date))} dateFormat="dd-MM-YYYY" showIcon className="w-32 p-2 border rounded" />
                 </div>
                 <div>
                   <label className="block">Amount:</label>
@@ -263,8 +286,9 @@ const App = () => {
                 setSelectedTag={setSelectedTag}
                 startDate={startDate}
                 setStartDate={setStartDate}
-                endDate={endDate}
+                endDate={formatDateTime(endDate)}
                 setEndDate={setEndDate}
+                formatDateTime={formatDateTime}
             />
 
             <RecordList className="mt-16" type={type} records={filteredRecords} handleDeleteTransaction={handleDeleteTransaction} handleEditTransaction={handleEditTransaction} />
