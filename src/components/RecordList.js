@@ -113,7 +113,7 @@ const RecordList = ({ type, records, handleDeleteTransaction, handleEditTransact
                     <tr>
                         <th className="border border-gray-300 px-4 py-2">Tag</th>
                         <th className="border border-gray-300 px-4 py-2">Amount</th>
-                        <th className="border border-gray-300 px-4 py-2">Date & Time</th>
+                        <th className="border border-gray-300 px-4 py-2">Date</th>
                         <th className="border border-gray-300 px-4 py-2">Actions</th>
                     </tr>
                 </thead>
@@ -126,7 +126,7 @@ const RecordList = ({ type, records, handleDeleteTransaction, handleEditTransact
                                 <td className="border border-gray-300 px-4 py-2">{formatDateTime(record.date)}</td>
                                 <td className="border border-gray-300 px-4 py-2">
                                     <button className="bg-blue-500 text-white px-2 py-1 rounded" onClick={() => handleEditTransaction(record.id, record)}>Edit</button>
-                                    <button className="bg-red-500 text-white px-2 py-1 rounded" onClick={() => handleDeleteTransaction(record.id)}>Delete</button>
+                                    <button className="bg-red-500 text-white px-2 py-1 rounded" onClick={() => handleDeleteTransaction(record.id)}>Del</button>
                                 </td>
                             </tr>
                         ))
