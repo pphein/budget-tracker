@@ -180,7 +180,7 @@ const App = () => {
                 </button>
               </div>
               <div className="my-4 flex flex-row">
-                  <h2 className="text-xl font-bold my-2 mx-2">New Tag: </h2>
+                  <h2 className="text-xl font-bold my-2 mx-2 text-blue-500">New Tag: </h2>
                   <div className="flex space-x-2">
                       <input
                           type="text"
