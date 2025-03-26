@@ -3,9 +3,11 @@
 
 const register = () => {
     if ('serviceWorker' in navigator) {
+      console.log('Registering service worker');
       window.addEventListener('load', () => {
+        console.log('Window loaded');
         navigator.serviceWorker
-          .register('../public/service-worker.js')
+          .register('./service-worker.js')
           .then(reg => console.log('Service Worker registered:', reg))
           .catch(err => console.error('Service Worker registration failed:', err));
       });
