@@ -166,16 +166,22 @@ const App = () => {
         <div className="m-auto flex flex-col justify-center items-center">
             <div className="flex justify-between border-b bg-gray-100 px-10">
                 <button
-                    className={`py-2 px-16 ${activeTab === 'income' ? 'border-b-2 border-blue-500' : ''}`}
+                    className={`py-2 px-8 ${activeTab === 'income' ? 'border-b-2 border-blue-500' : ''}`}
                     onClick={() => handleTabChange('income')}
                 >
                     Income
                 </button>
                 <button
-                    className={`py-2 px-16 ${activeTab === 'expense' ? 'border-b-2 border-blue-500' : ''}`}
+                    className={`py-2 px-8 ${activeTab === 'expense' ? 'border-b-2 border-blue-500' : ''}`}
                     onClick={() => handleTabChange('expense')}
                 >
                     Expense
+                </button>
+                <button
+                    className={`py-2 px-8 ${activeTab === 'balance' ? 'border-b-2 border-blue-500' : ''}`}
+                    onClick={() => handleTabChange('balance')}
+                >
+                    Balance
                 </button>
               </div>
               <div className="my-4 flex flex-row">
