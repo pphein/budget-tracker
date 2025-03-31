@@ -163,9 +163,8 @@ const App = () => {
     console.log("filteredRecords >> ", filteredRecords);
     console.log("Tags for app >> ", tags);
     return (
-        <div className="w-container m-auto flex flex-row justify-center items-center">
-           <div style={{marginTop: "450px"}} className='absolute xs:w-32 flex flex-row justify-center flex-col items-center flex-wrap'>
-            <div className="flex mt- justify-between border-b bg-gray-100 px-10">
+        <div className="m-auto flex flex-col justify-center items-center">
+            <div className="flex justify-between border-b bg-gray-100 px-10">
                 <button
                     className={`py-2 px-16 ${activeTab === 'income' ? 'border-b-2 border-blue-500' : ''}`}
                     onClick={() => handleTabChange('income')}
@@ -295,7 +294,6 @@ const App = () => {
 
                 <RecordList className="mt-16" type={type} records={filteredRecords} handleDeleteTransaction={handleDeleteTransaction} handleEditTransaction={handleEditTransaction} formatDateTime={formatDateTime} />
               </div>
-           </div>
         </div>
     );
 };
