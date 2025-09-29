@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import IncomeExpenseTabs from './components/IncomeExpenseTabs';
-import TagInput from './components/TagInput';
 import RecordList from './components/RecordList';
 import Filter from './components/Filter';
 import DatePicker from 'react-datepicker';
@@ -45,11 +43,6 @@ const App = () => {
     console.log("amount >>", amount);
 
     const [newTag, setNewTag] = useState('');
-    // Get current date-time in YYYY-MM-DDTHH:MM format (for input type="datetime-local")
-    // const getCurrentDateTime = () => {
-    //   const now = new Date();
-    //   return now.toISOString().slice(0, 16); // Format: "YYYY-MM-DDTHH:MM"
-    // };
 
     const [date, setDate] = useState(currentDateTime);
     console.log("date >>", date);
@@ -80,14 +73,6 @@ const App = () => {
       setTransactions(data);
     };
 
-    // const loadTags = async (tab) => {
-    //   const data = await getTags();
-    //   console.log("Tags from DB >> ", data);
-    //   const tagsByType = data.filter((t) => t.type === tab).map((t) => t);
-    //   setTags(tagsByType);
-    //   console.log("Tags by tab >> ", tagsByType);
-    // }
-
     useEffect(() => {
       loadTransactions();
       loadTags();
@@ -109,15 +94,6 @@ const App = () => {
   
     const formatDateTime = (isoString) => {
       const dateObj = new Date(isoString);
-      // return `${dateObj.toLocaleTimeString("en-US", { 
-      //     timeZone: "Asia/Yangon",
-      //     year: "numeric",
-      //     month: "long",
-      //     day: "2-digit",
-      //     hour: "2-digit",
-      //     minute: "2-digit",
-      // })}`;
-      // return dateObj.toLocaleString();
       // Adjust the time difference for Asia/Yangon (UTC+6:30)
       dateObj.setMinutes(dateObj.getMinutes() + 392); // Add 390 minutes (6 hours and 30 minutes)
       return dateObj.toLocaleString("en-US", {
@@ -129,22 +105,6 @@ const App = () => {
       });
       
     };
-
-    // const addTransaction = (e) => {
-    //   e.preventDefault();
-    //   if (!type || !tag || !amount || !date) return alert("Some fields are required!");
-  
-    //   const newTransaction = { type, tag, amount: parseFloat(amount), date };
-    //   const updatedTransactions = [...transactions, newTransaction];
-  
-    //   setTransactions(updatedTransactions);
-    //   console.log("Updated Transaction >> ", updatedTransactions);
-
-    //   localStorage.setItem("budget-data", JSON.stringify(updatedTransactions));
-    //   console.log("Local Storage >> ", JSON.parse(localStorage.getItem("budget-data")));
-  
-    //   setAmount("");
-    // };
     
     const handleTabChange = (tab) => {
         setActiveTab(tab);
@@ -184,7 +144,8 @@ const App = () => {
                     Balance
                 </button>
               </div>
-              <div className="my-4 flex flex-row">
+              { activeTab !== 'balance' && (
+                <div className="my-4 flex flex-row">
                   <h2 className="text-xl font-bold my-2 mx-2 text-blue-500">New Tag: </h2>
                   <div className="flex space-x-2">
                       <input
@@ -198,95 +159,65 @@ const App = () => {
                           Add
                       </button>
                   </div>
-              </div>
+                </div>
+              )}
 
               {/* Transaction Form */}
-              <div className="space-3 mb-3">
-                <div className='flex space-x-2 flex-row justify-between items-end'>
-                  <div style={{display: "none"}}>
-                    <label className="block">Type:</label>
-                    <select value={type} onChange={(e) => setType(e.target.value)} className="p-2 border rounded">
-                      <option value={tab}>{tab}</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block">Tag:</label>
-                    <select value={tag} onChange={(e) => setTag(e.target.value)} className="p-2 border rounded">
-                      {tags.map((t) => (
-                          <option key={t.id} value={t.name}> {t.name}</option>                        
-                        ))
-                      }
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block">Date:</label>
-                    {/* <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full p-2 border rounded"/> */}
-                    <DatePicker selected={date} onChange={(date) => setDate(formatDateTime(date))} dateFormat="dd-MM-YYYY" showIcon className="w-32 p-2 border rounded" />
-                  </div>
-                  <div>
-                    <label className="block">Amount:</label>
-                    <input
-                      type="text"
-                      value={amount}
-                      onChange={(e) => {
-                        const input = e.target.value;
-                        if (/^[0-9+\s]*$/.test(input)) {
-                          setAmount(input);
+              { activeTab !== 'balance' && (
+                <div className="space-3 mb-3">
+                  <div className='flex space-x-2 flex-row justify-between items-end'>
+                    <div style={{display: "none"}}>
+                      <label className="block">Type:</label>
+                      <select value={type} onChange={(e) => setType(e.target.value)} className="p-2 border rounded">
+                        <option value={tab}>{tab}</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block">Tag:</label>
+                      <select value={tag} onChange={(e) => setTag(e.target.value)} className="p-2 border rounded">
+                        {tags.map((t) => (
+                            <option key={t.id} value={t.name}> {t.name}</option>                        
+                          ))
                         }
-                      }}
-                      onBlur={(e) => {
-                        try {
-                          const result = eval(e.target.value.replace(/\s+/g, ''));
-                          if (!isNaN(result)) {
-                            setAmount(result.toString());
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block">Date:</label>
+                      <DatePicker selected={date} onChange={(date) => setDate(formatDateTime(date))} dateFormat="dd-MM-YYYY" showIcon className="w-32 p-2 border rounded" />
+                    </div>
+                    <div>
+                      <label className="block">Amount:</label>
+                      <input
+                        type="text"
+                        value={amount}
+                        onChange={(e) => {
+                          const input = e.target.value;
+                          if (/^[0-9+\s]*$/.test(input)) {
+                            setAmount(input);
                           }
-                        } catch {
-                          alert("Invalid expression");
-                        }
-                      }}
-                      className="w-24 p-2 border rounded"
-                    />
-                  </div>
-                  <div>
-                    <button onClick={handleAddTransaction} type="submit" className={`w-full ${tab === 'income' ? 'bg-green-500' : 'bg-red-500'} text-white p-2 rounded`}>
-                    Save
-                  </button>
+                        }}
+                        onBlur={(e) => {
+                          try {
+                            const result = eval(e.target.value.replace(/\s+/g, ''));
+                            if (!isNaN(result)) {
+                              setAmount(result.toString());
+                            }
+                          } catch {
+                            alert("Invalid expression");
+                          }
+                        }}
+                        className="w-24 p-2 border rounded"
+                      />
+                    </div>
+                    <div>
+                      <button onClick={handleAddTransaction} type="submit" className={`w-full ${tab === 'income' ? 'bg-green-500' : 'bg-red-500'} text-white p-2 rounded`}>
+                      Save
+                    </button>
+                    </div>
                   </div>
                 </div>
-
-                {/* <div className='flex space-x-2 flex-row justify-between items-end'>
-                  <div>
-                    <label className="block">Amount:</label>
-                    <input
-                      type="text"
-                      value={amount}
-                      onChange={(e) => {
-                        const input = e.target.value;
-                        if (/^[0-9+\s]*$/.test(input)) {
-                          setAmount(input);
-                        }
-                      }}
-                      onBlur={(e) => {
-                        try {
-                          const result = eval(e.target.value.replace(/\s+/g, ''));
-                          if (!isNaN(result)) {
-                            setAmount(result.toString());
-                          }
-                        } catch {
-                          alert("Invalid expression");
-                        }
-                      }}
-                      className="w-full p-2 border rounded"
-                    />
-                  </div>
-                  <div>
-                    <button onClick={handleAddTransaction} type="submit" className={`w-full ${tab === 'income' ? 'bg-green-500' : 'bg-red-500'} text-white p-2 rounded`}>
-                    Save
-                  </button>
-                  </div>
-                </div> */}
-              </div>
-              <div className='bg-gray-200 p-4 mt-4'>
+              )}
+              {/* <div className='bg-gray-200 p-4 mt-4'>
                 <Filter
                     tags={tags}
                     selectedTag={selectedTag}
@@ -299,6 +230,62 @@ const App = () => {
                 />
 
                 <RecordList className="mt-16" type={type} records={filteredRecords} handleDeleteTransaction={handleDeleteTransaction} handleEditTransaction={handleEditTransaction} formatDateTime={formatDateTime} />
+              </div> */}
+              <div className="bg-gray-200 p-4 mt-4">
+                {activeTab === "balance" ? (
+                  <div>
+                    <h2 className="text-xl font-bold mb-4 text-blue-500">Daily Balance</h2>
+                    <table className="w-full border-collapse border border-gray-400">
+                      <thead>
+                        <tr className="bg-gray-300">
+                          <th className="border border-gray-400 p-2">Date</th>
+                          <th className="border border-gray-400 p-2">Total Income</th>
+                          <th className="border border-gray-400 p-2">Total Expense</th>
+                          <th className="border border-gray-400 p-2">Net</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {Object.values(
+                          transactions.reduce((acc, t) => {
+                            const day = new Date(t.date).toISOString().split("T")[0];
+                            if (!acc[day]) acc[day] = { date: day, income: 0, expense: 0 };
+                            if (t.type === "income") acc[day].income += parseFloat(t.amount || 0);
+                            if (t.type === "expense") acc[day].expense += parseFloat(t.amount || 0);
+                            return acc;
+                          }, {})
+                        ).map((row) => (
+                          <tr key={row.date}>
+                            <td className="border border-gray-400 p-2">{row.date}</td>
+                            <td className="border border-gray-400 p-2 text-green-600">${row.income}</td>
+                            <td className="border border-gray-400 p-2 text-red-600">${row.expense}</td>
+                            <td className="border border-gray-400 p-2 font-bold text-blue-600">${row.income - row.expense}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <>
+                    <Filter
+                      tags={tags}
+                      selectedTag={selectedTag}
+                      setSelectedTag={setSelectedTag}
+                      startDate={startDate}
+                      setStartDate={setStartDate}
+                      endDate={formatDateTime(endDate)}
+                      setEndDate={setEndDate}
+                      formatDateTime={formatDateTime}
+                    />
+                    <RecordList
+                      className="mt-16"
+                      type={type}
+                      records={filteredRecords}
+                      handleDeleteTransaction={handleDeleteTransaction}
+                      handleEditTransaction={handleEditTransaction}
+                      formatDateTime={formatDateTime}
+                    />
+                  </>
+                )}
               </div>
         </div>
     );
