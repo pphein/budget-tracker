@@ -12,6 +12,7 @@
 //   addTag,
 //   deleteTag,
 // } from "./db";
+// import EditAmountModal from './components/EditAmountModal';
 
 // const App = () => {
 //   const [tab, setTab] = useState('income'); // Default to income
@@ -32,8 +33,12 @@
 
 //   const tabs = ['income', 'expense', 'balance'];
 //   const touchStartX = useRef(null);
-//   const touchStartY = useRef(null); // 👈 NEW: detect vertical swipes
+//   const touchStartY = useRef(null);
 //   const isScrolling = useRef(false);
+
+//   // Modal state
+//   const [isModalOpen, setIsModalOpen] = useState(false);
+//   const [editingTransaction, setEditingTransaction] = useState(null);
 
 //   // swipe handler
 //   const handleTouchStart = (e) => {
@@ -44,7 +49,7 @@
 //     }
 //     isScrolling.current = false;
 //     touchStartX.current = e.touches[0].clientX;
-//     touchStartY.current = e.touches[0].clientY; // 👈 save Y to filter vertical swipe
+//     touchStartY.current = e.touches[0].clientY;
 //   };
 
 //   const handleTouchEnd = (e) => {
@@ -52,21 +57,20 @@
 //       isScrolling.current = false;
 //       return;
 //     }
-
 //     if (touchStartX.current === null || touchStartY.current === null) return;
+
 //     const touchEndX = e.changedTouches[0].clientX;
 //     const touchEndY = e.changedTouches[0].clientY;
 //     const deltaX = touchEndX - touchStartX.current;
 //     const deltaY = touchEndY - touchStartY.current;
 
-//     // 👇 prevent false triggers if user swipes more vertically than horizontally
 //     if (Math.abs(deltaY) > Math.abs(deltaX)) {
 //       touchStartX.current = null;
 //       touchStartY.current = null;
 //       return;
 //     }
 
-//     if (Math.abs(deltaX) > 50) { // threshold
+//     if (Math.abs(deltaX) > 50) {
 //       const currentIndex = tabs.indexOf(activeTab);
 //       if (deltaX < 0 && currentIndex < tabs.length - 1) {
 //         handleTabChange(tabs[currentIndex + 1]);
@@ -108,11 +112,18 @@
 //     loadTransactions();
 //   };
 
-//   const handleEditTransaction = async (id, oldData) => {
-//     const updatedAmount = prompt("Enter new amount", oldData.amount);
-//     if (!updatedAmount) return alert("Amount is required!");
+//   const handleEditTransaction = (transaction) => {
+//     console.log("Selected transaction ", transaction)
+//     setEditingTransaction(transaction);
+//     setIsModalOpen(true);
+//     console.log("Editing transactoin", editingTransaction)
+//   };
+
+//   const saveEditTransaction = async (id, updatedAmount) => {
 //     await editTransaction(id, { amount: parseFloat(updatedAmount) });
 //     loadTransactions();
+//     setIsModalOpen(false);
+//     setEditingTransaction(null);
 //   };
 
 //   const createTag = async (e) => {
@@ -148,7 +159,8 @@
 //   const filteredRecords = transactions.filter((record) => {
 //     const typeMatch = record.type === type;
 //     const tagMatch = selectedTag ? record.tag === selectedTag : true;
-//     const dateMatch = (!startDate || new Date(record.date) >= new Date(startDate)) &&
+//     const dateMatch =
+//       (!startDate || new Date(record.date) >= new Date(startDate)) &&
 //       (!endDate || new Date(record.date) <= new Date(endDate));
 //     return typeMatch && tagMatch && dateMatch;
 //   });
@@ -240,74 +252,80 @@
 //       )}
 
 //       {/* --- Transaction Display Section --- */}
-      
-//         {activeTab === "balance" ? (
-//           <div className="bg-gray-200 p-2 sm:p-4 mt-4 w-full">
-//             <div className="w-full">
-//               <h2 className="text-lg sm:text-xl font-bold mb-4 text-blue-500">Daily Balance</h2>
-//               <div className="">
-//                 <table className="w-full border-collapse border border-gray-400 text-sm sm:text-base">
-//                   <thead>
-//                     <tr className="bg-gray-300">
-//                       <th className="border border-gray-400 p-2">Date</th>
-//                       <th className="border border-gray-400 p-2">Total Income</th>
-//                       <th className="border border-gray-400 p-2">Total Expense</th>
-//                       <th className="border border-gray-400 p-2">Net</th>
+//       {activeTab === "balance" ? (
+//         <div className="bg-gray-200 p-2 sm:p-4 mt-4 w-full">
+//           <div className="w-full">
+//             <h2 className="text-lg sm:text-xl font-bold mb-4 text-blue-500">Daily Balance</h2>
+//             <div className="">
+//               <table className="w-full border-collapse border border-gray-400 text-sm sm:text-base">
+//                 <thead>
+//                   <tr className="bg-gray-300">
+//                     <th className="border border-gray-400 p-2">Date</th>
+//                     <th className="border border-gray-400 p-2">Total Income</th>
+//                     <th className="border border-gray-400 p-2">Total Expense</th>
+//                     <th className="border border-gray-400 p-2">Net</th>
+//                   </tr>
+//                 </thead>
+//                 <tbody>
+//                   {Object.values(
+//                     transactions.reduce((acc, t) => {
+//                       const day = new Date(t.date).toISOString().split("T")[0];
+//                       if (!acc[day]) acc[day] = { date: day, income: 0, expense: 0 };
+//                       if (t.type === "income") acc[day].income += parseFloat(t.amount || 0);
+//                       if (t.type === "expense") acc[day].expense += parseFloat(t.amount || 0);
+//                       return acc;
+//                     }, {})
+//                   ).map((row) => (
+//                     <tr key={row.date}>
+//                       <td className="border border-gray-400 p-2">{row.date}</td>
+//                       <td className="border border-gray-400 p-2 text-green-600">${row.income}</td>
+//                       <td className="border border-gray-400 p-2 text-red-600">${row.expense}</td>
+//                       <td className="border border-gray-400 p-2 font-bold text-blue-600">${row.income - row.expense}</td>
 //                     </tr>
-//                   </thead>
-//                   <tbody>
-//                     {Object.values(
-//                       transactions.reduce((acc, t) => {
-//                         const day = new Date(t.date).toISOString().split("T")[0];
-//                         if (!acc[day]) acc[day] = { date: day, income: 0, expense: 0 };
-//                         if (t.type === "income") acc[day].income += parseFloat(t.amount || 0);
-//                         if (t.type === "expense") acc[day].expense += parseFloat(t.amount || 0);
-//                         return acc;
-//                       }, {})
-//                     ).map((row) => (
-//                       <tr key={row.date}>
-//                         <td className="border border-gray-400 p-2">{row.date}</td>
-//                         <td className="border border-gray-400 p-2 text-green-600">${row.income}</td>
-//                         <td className="border border-gray-400 p-2 text-red-600">${row.expense}</td>
-//                         <td className="border border-gray-400 p-2 font-bold text-blue-600">${row.income - row.expense}</td>
-//                       </tr>
-//                     ))}
-//                   </tbody>
-//                 </table>
-//               </div>
+//                   ))}
+//                 </tbody>
+//               </table>
 //             </div>
 //           </div>
-//           ) : (
-//           <div className="bg-gray-200 p-2 sm:p-4 mt-4 w-full overflow-x-auto">
-//             <>
-//               <Filter
-//                 tags={tags}
-//                 selectedTag={selectedTag}
-//                 setSelectedTag={setSelectedTag}
-//                 startDate={startDate}
-//                 setStartDate={setStartDate}
-//                 endDate={formatDateTime(endDate)}
-//                 setEndDate={setEndDate}
-//                 formatDateTime={formatDateTime}
-//               />
-//               <RecordList
-//                 className="mt-4"
-//                 type={type}
-//                 records={filteredRecords}
-//                 handleDeleteTransaction={handleDeleteTransaction}
-//                 handleEditTransaction={handleEditTransaction}
-//                 formatDateTime={formatDateTime}
-//               />
-//             </>
-//           </div>
-//         )}
+//         </div>
+//       ) : (
+//         <div className="bg-gray-200 p-2 sm:p-4 mt-4 w-full overflow-x-auto">
+//           <>
+//             <Filter
+//               tags={tags}
+//               selectedTag={selectedTag}
+//               setSelectedTag={setSelectedTag}
+//               startDate={startDate}
+//               setStartDate={setStartDate}
+//               endDate={formatDateTime(endDate)}
+//               setEndDate={setEndDate}
+//               formatDateTime={formatDateTime}
+//             />
+//             <RecordList
+//               className="mt-4"
+//               type={type}
+//               records={filteredRecords}
+//               handleDeleteTransaction={handleDeleteTransaction}
+//               handleEditTransaction={handleEditTransaction}
+//               formatDateTime={formatDateTime}
+//             />
+//           </>
+//         </div>
+//       )}
+
+//       {/* --- Edit Modal --- */}
+//       <EditAmountModal
+//         isOpen={isModalOpen}
+//         onClose={() => setIsModalOpen(false)}
+//         onSave={saveEditTransaction}
+//         oldData={editingTransaction}
+//       />
 //     </div>
 //   );
 // };
 
 // export default App;
-
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, forwardRef } from 'react';
 import RecordList from './components/RecordList';
 import Filter from './components/Filter';
 import DatePicker from 'react-datepicker';
@@ -323,8 +341,27 @@ import {
 } from "./db";
 import EditAmountModal from './components/EditAmountModal';
 
+// ✅ New InfoModal for replacing alert()
+const InfoModal = ({ isOpen, message, onClose }) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+      <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
+        <h2 className="text-lg font-bold mb-4 text-blue-600">Information</h2>
+        <p className="mb-4">{message}</p>
+        <button
+          onClick={onClose}
+          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+        >
+          OK
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const App = () => {
-  const [tab, setTab] = useState('income'); // Default to income
+  const [tab, setTab] = useState('income'); 
   const [type, setType] = useState(tab);
 
   const [tags, setTags] = useState([]);
@@ -349,7 +386,10 @@ const App = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState(null);
 
-  // swipe handler
+  // ✅ New state for info modal (replace alert)
+  const [infoMessage, setInfoMessage] = useState('');
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
+
   const handleTouchStart = (e) => {
     const target = e.target.closest('.overflow-x-auto');
     if (target) {
@@ -409,7 +449,13 @@ const App = () => {
   }, [tab]);
 
   const handleAddTransaction = async () => {
-    if (!amount) return alert("Please enter an amount");
+    if (!amount) {
+      // ❌ Old: alert("Please enter an amount")
+      // ✅ New: use InfoModal
+      setInfoMessage("Please enter an amount");
+      setIsInfoModalOpen(true);
+      return;
+    }
     const newTransaction = { type, tag, amount: parseFloat(amount), date };
     await addTransaction(newTransaction);
     loadTransactions();
@@ -422,13 +468,16 @@ const App = () => {
   };
 
   const handleEditTransaction = (transaction) => {
-    console.log("Selected transaction ", transaction)
     setEditingTransaction(transaction);
     setIsModalOpen(true);
-    console.log("Editing transactoin", editingTransaction)
   };
 
   const saveEditTransaction = async (id, updatedAmount) => {
+    if (!updatedAmount) {
+      setInfoMessage("Amount is required!");
+      setIsInfoModalOpen(true);
+      return;
+    }
     await editTransaction(id, { amount: parseFloat(updatedAmount) });
     loadTransactions();
     setIsModalOpen(false);
@@ -437,7 +486,11 @@ const App = () => {
 
   const createTag = async (e) => {
     e.preventDefault();
-    if (!newTag) return alert("Tag is required!");
+    if (!newTag) {
+      setInfoMessage("Tag is required!");
+      setIsInfoModalOpen(true);
+      return;
+    }
     const newTagdata = { name: newTag, type: tab };
     await addTag(newTagdata);
     loadTags();
@@ -474,13 +527,24 @@ const App = () => {
     return typeMatch && tagMatch && dateMatch;
   });
 
+  const CustomInput = forwardRef(({ value, onClick }, ref) => (
+    <input
+      className="w-full p-2 border rounded bg-white cursor-pointer"
+      value={value}
+      onClick={onClick}
+      readOnly  // ✅ prevents typing
+      ref={ref}
+    />
+  ));
+
+
   return (
     <div
       className="m-auto flex flex-col justify-center items-center px-2 sm:px-4 md:px-8 w-full max-w-6xl"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      {/* --- Tab Buttons --- */}
+      {/* Tab Buttons */}
       <div className="flex flex-row justify-between border-b bg-gray-100 w-full">
         {tabs.map((t) => (
           <button
@@ -493,7 +557,7 @@ const App = () => {
         ))}
       </div>
 
-      {/* --- New Tag Section --- */}
+      {/* New Tag Section */}
       {activeTab !== 'balance' && (
         <div className="my-4 w-full flex flex-col sm:flex-row sm:items-center sm:space-x-4">
           <h2 className="text-lg sm:text-xl font-bold my-2 text-blue-500">New Tag: </h2>
@@ -515,7 +579,7 @@ const App = () => {
         </div>
       )}
 
-      {/* --- Transaction Form --- */}
+      {/* Transaction Form */}
       {activeTab !== 'balance' && (
         <div className="space-3 mb-3 w-full">
           <div className="flex sm:flex-row flex-col md:space-x-4 md:space-y-0 justify-center md:justify-around items-stretch md:items-end">
@@ -532,9 +596,12 @@ const App = () => {
               <DatePicker
                 selected={date}
                 onChange={(date) => setDate(formatDateTime(date))}
-                dateFormat="dd-MM-YYYY"
+                dateFormat="dd-MM-yyyy"
                 showIcon
-                className="w-full p-2 border rounded"
+                // ✅ Prevent typing into datepicker
+                customInput={<CustomInput />}
+                readOnly
+                inputMode="none"
               />
             </div>
             <div>
@@ -560,12 +627,12 @@ const App = () => {
         </div>
       )}
 
-      {/* --- Transaction Display Section --- */}
+      {/* Transaction Display Section */}
       {activeTab === "balance" ? (
         <div className="bg-gray-200 p-2 sm:p-4 mt-4 w-full">
           <div className="w-full">
             <h2 className="text-lg sm:text-xl font-bold mb-4 text-blue-500">Daily Balance</h2>
-            <div className="">
+            <div>
               <table className="w-full border-collapse border border-gray-400 text-sm sm:text-base">
                 <thead>
                   <tr className="bg-gray-300">
@@ -599,35 +666,40 @@ const App = () => {
         </div>
       ) : (
         <div className="bg-gray-200 p-2 sm:p-4 mt-4 w-full overflow-x-auto">
-          <>
-            <Filter
-              tags={tags}
-              selectedTag={selectedTag}
-              setSelectedTag={setSelectedTag}
-              startDate={startDate}
-              setStartDate={setStartDate}
-              endDate={formatDateTime(endDate)}
-              setEndDate={setEndDate}
-              formatDateTime={formatDateTime}
-            />
-            <RecordList
-              className="mt-4"
-              type={type}
-              records={filteredRecords}
-              handleDeleteTransaction={handleDeleteTransaction}
-              handleEditTransaction={handleEditTransaction}
-              formatDateTime={formatDateTime}
-            />
-          </>
+          <Filter
+            tags={tags}
+            selectedTag={selectedTag}
+            setSelectedTag={setSelectedTag}
+            startDate={startDate}
+            setStartDate={setStartDate}
+            endDate={formatDateTime(endDate)}
+            setEndDate={setEndDate}
+            formatDateTime={formatDateTime}
+          />
+          <RecordList
+            className="mt-4"
+            type={type}
+            records={filteredRecords}
+            handleDeleteTransaction={handleDeleteTransaction}
+            handleEditTransaction={handleEditTransaction}
+            formatDateTime={formatDateTime}
+          />
         </div>
       )}
 
-      {/* --- Edit Modal --- */}
+      {/* Edit Modal */}
       <EditAmountModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSave={saveEditTransaction}
         oldData={editingTransaction}
+      />
+
+      {/* ✅ Info Modal for replacing alert */}
+      <InfoModal
+        isOpen={isInfoModalOpen}
+        message={infoMessage}
+        onClose={() => setIsInfoModalOpen(false)}
       />
     </div>
   );
