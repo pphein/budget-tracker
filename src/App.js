@@ -527,16 +527,16 @@ const App = () => {
     return typeMatch && tagMatch && dateMatch;
   });
 
-  const CustomInput = forwardRef(({ value, onClick }, ref) => (
-    <input
-      className="w-full p-2 border rounded bg-white cursor-pointer"
-      value={value}
-      onClick={onClick}
-      readOnly  // ✅ prevents typing
-      ref={ref}
-      inputMode='none'
-    />
-  ));
+  // const CustomInput = forwardRef(({ value, onClick }, ref) => (
+  //   <input
+  //     className="w-full p-2 border rounded bg-white cursor-pointer"
+  //     value={value}
+  //     onClick={onClick}
+  //     readOnly  // ✅ prevents typing
+  //     ref={ref}
+  //     inputMode='none'
+  //   />
+  // ));
 
 
   return (
@@ -597,11 +597,10 @@ const App = () => {
               <DatePicker
                 selected={date}
                 onChange={(date) => setDate(formatDateTime(date))}
-                dateFormat="dd-MM-yyyy"
+                dateFormat="dd-MM-YYYY"
                 showIcon
-                // ✅ Prevent typing into datepicker
-                customInput={<CustomInput />}
-                readOnly
+                className="w-full p-2 border rounded"
+                withPortal={true}
               />
             </div>
             <div>
