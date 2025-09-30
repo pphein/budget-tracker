@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, forwardRef} from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
@@ -9,6 +9,17 @@ const Filter = ({ tags, selectedTag, setSelectedTag, start, setStartDate, end, s
         null
     ]);
     const [startDate, endDate] = dateRange;
+   
+    // Custom input for date range
+    const RangeInput = forwardRef(({ value, onClick }: any, ref: any) => (
+    <button
+        onClick={onClick}
+        ref={ref}
+        className="w-full text-left p-2 border rounded bg-white"
+    >
+        {value ? value : "Select date range"}
+    </button>
+    ));
     return (
         <div className="flex space-x-4">
             <select
@@ -39,6 +50,7 @@ const Filter = ({ tags, selectedTag, setSelectedTag, start, setStartDate, end, s
             /> */}
             {/* <DatePicker selected={endDate} onChange={(endDate) => setEndDate(formatDateTime(endDate))} dateFormat="dd-MM-YYYY" showIcon className="w-32 border px-2 py-1 rounded"/> */}
             <DatePicker
+                selected={startDate}
                 startDate={startDate}
                 endDate={endDate}
                 onChange={(update) => {
@@ -49,6 +61,8 @@ const Filter = ({ tags, selectedTag, setSelectedTag, start, setStartDate, end, s
                 selectsRange
                 withPortal
                 usePointerEvent
+                dateFormat={"dd-MM-yyyy"}
+                customInput={<RangeInput />}
             />    
         </div>
     );
