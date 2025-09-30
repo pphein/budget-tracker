@@ -1,4 +1,4 @@
-import { Listbox, Transition } from "@headlessui/react"; // ✅ added for custom dropdown
+import { Listbox, Transition, Dialog } from "@headlessui/react"; // ✅ added for custom dropdown
 import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/20/solid"; // ✅ icons
 
 import React, { useState, useEffect, useRef, forwardRef, Fragment } from 'react';
@@ -25,12 +25,16 @@ const InfoModal = ({ isOpen, message, onClose }) => {
       <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
         <h2 className="text-lg font-bold mb-4 text-blue-600">Information</h2>
         <p className="mb-4">{message}</p>
-        <button
-          onClick={onClose}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-        >
-          OK
-        </button>
+
+        {/* ✅ Align button to the end */}
+        <div className="flex justify-end">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            OK
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -160,8 +164,8 @@ const App = () => {
     setEditingTransaction(null);
   };
 
-  const createTag = async (e) => {
-    e.preventDefault();
+  const createTag = async () => {
+    // e.preventDefault();
     if (!newTag) {
       setInfoMessage("Tag is required!");
       setIsInfoModalOpen(true);
@@ -218,6 +222,8 @@ const App = () => {
       {value}
     </button>)
 
+  const [isTagFormModalOpen, setIsTagFormModalOpen] = useState(false); // ✅ state for tag form modal
+
   return (
     <div
       className="m-auto flex flex-col justify-center items-center px-2 sm:px-4 md:px-8 w-full max-w-6xl"
@@ -239,70 +245,81 @@ const App = () => {
 
       {/* New Tag Section */}
       {activeTab !== 'balance' && (
-        <div className="my-4 w-full flex flex-col sm:flex-row sm:items-center sm:space-x-4">
-          <h2 className="text-lg sm:text-xl font-bold my-2 text-blue-500">New Tag: </h2>
-          <div className="flex flex-row w-full sm:w-auto sm:space-y-0 sm:space-x-2">
-            <input
-              type="text"
-              value={newTag}
-              onChange={(e) => setNewTag(e.target.value)}
-              placeholder="Add custom tag"
-              className="border px-2 py-1 rounded w-full sm:w-auto"
-            />
-            <button
-              onClick={createTag}
-              className="px-2 py-2 bg-blue-500 text-white rounded w-full sm:w-auto"
-            >
-              Add
-            </button>
+        // <div className="my-4 w-full flex flex-col sm:flex-row sm:items-center sm:space-x-4">
+        //   <h2 className="text-lg sm:text-xl font-bold my-2 text-blue-500">New Tag: </h2>
+        //   <div className="flex flex-row w-full sm:w-auto sm:space-y-0 sm:space-x-2">
+        //     <input
+        //       type="text"
+        //       value={newTag}
+        //       onChange={(e) => setNewTag(e.target.value)}
+        //       placeholder="Add custom tag"
+        //       className="border px-2 py-1 rounded w-full sm:w-auto"
+        //     />
+        //     <button
+        //       onClick={createTag}
+        //       className="px-2 py-2 bg-blue-500 text-white rounded w-full sm:w-auto"
+        //     >
+        //       Add
+        //     </button>
+        //   </div>
+        // </div>
+        <>
+          {/* New Tag Section */}
+          <div className="my-4 w-full flex flex-col sm:flex-row sm:items-center sm:space-x-4">
+            <h2 className="text-lg sm:text-xl font-bold my-2 text-blue-500">Tags</h2>
+            <div>
+              <button
+                onClick={() => setIsTagFormModalOpen(true)} // ✅ open modal
+                className="px-4 py-2 bg-blue-500 text-white rounded"
+              >
+                + Add Tag
+              </button>
+            </div>
           </div>
-        </div>
+
+          {/* ✅ Modal for adding tag */}
+          <Dialog open={isTagFormModalOpen} onClose={() => setIsTagFormModalOpen(false)} className="relative z-50">
+            {/* Background overlay */}
+            <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+
+            {/* Modal panel */}
+            <div className="fixed inset-0 flex items-center justify-center p-4">
+              <Dialog.Panel className="w-full max-w-sm rounded-lg bg-white p-6 shadow-lg">
+                <Dialog.Title className="text-lg font-bold mb-4">Create New Tag</Dialog.Title>
+
+                <input
+                  type="text"
+                  value={newTag}
+                  onChange={(e) => setNewTag(e.target.value)}
+                  placeholder="Tag name"
+                  className="w-full border px-3 py-2 rounded mb-4"
+                />
+
+                <div className="flex justify-end space-x-2">
+                  <button
+                    onClick={() => setIsTagFormModalOpen(false)} // close modal
+                    className="px-4 py-2 bg-gray-300 rounded"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={async () => {
+                      await createTag();
+                      setIsTagFormModalOpen(false);
+                    }}
+                    className="px-4 py-2 bg-blue-500 text-white rounded"
+                  >
+                    Save
+                  </button>
+                </div>
+              </Dialog.Panel>
+            </div>
+          </Dialog>
+        </>
       )}
 
       {/* Transaction Form */}
       {activeTab !== 'balance' && (
-        // <div className="space-3 mb-3 w-full">
-        //   <div className="flex sm:flex-row flex-col md:space-x-4 md:space-y-0 justify-center md:justify-around items-stretch md:items-end">
-        //     <div>
-        //       <label className="block">Tag:</label>
-        //       <select value={tag} onChange={(e) => setTag(e.target.value)} className="p-2 border rounded w-full">
-        //         {tags.map((t) => (
-        //           <option key={t.id} value={t.name}> {t.name}</option>
-        //         ))}
-        //       </select>
-        //     </div>
-        //     <div>
-        //       <label className="block">Date:</label>
-        //       <DatePicker
-        //         toggleCalendarOnIconClick
-        //         selected={date}
-        //         dateFormat={"dd-MM-yyyy"}
-        //         onChange={(date) => setDate(date)}
-        //         customInput={<ExampleCustomInput className="p-2 border rounded w-full" />}
-        //         withPortal
-        //       />
-        //     </div>
-        //     <div>
-        //       <label className="block">Amount:</label>
-        //       <input
-        //         type="number"
-        //         inputMode="decimal"
-        //         value={amount}
-        //         onChange={(e) => setAmount(e.target.value)}
-        //         className="w-full md:w-32 p-2 border rounded"
-        //       />
-        //     </div>
-        //     <div className="flex items-end">
-        //       <button
-        //         onClick={handleAddTransaction}
-        //         type="submit"
-        //         className={`w-full md:w-auto ${tab === 'income' ? 'bg-green-500' : 'bg-red-500'} text-white p-2 rounded`}
-        //       >
-        //         Save
-        //       </button>
-        //     </div>
-        //   </div>
-        // </div>
         <div className="space-3 mb-3 w-full">
           <div className="flex sm:flex-row flex-col md:space-x-4 md:space-y-0 justify-center md:justify-around items-stretch md:items-end">
 
