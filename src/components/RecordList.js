@@ -3,47 +3,6 @@ import { saveAs } from 'file-saver';
 import * as XLSX from 'xlsx';
 
 const RecordList = ({ type, records, handleDeleteTransaction, handleEditTransaction, formatDateTime }) => {
-    // return (
-    //     <div>
-    //         {records.length > 0 ? (
-    //             records.map((record, index) => (
-    //                 <div key={index} className="border-b py-2">
-    //                     <span className="font-bold">{record.tag}</span>: ${record.amount} - {record.datetime}
-    //                 </div>
-    //             ))
-    //         ) : (
-    //             <p>No records yet</p>
-    //         )}
-    //     </div>
-    // );
-    // return (
-    //     <table className="table-auto w-full border-collapse border border-gray-300">
-    //         <thead>
-    //             <tr>
-    //                 <th className="border border-gray-300 px-4 py-2">Tag</th>
-    //                 <th className="border border-gray-300 px-4 py-2">Amount</th>
-    //                 <th className="border border-gray-300 px-4 py-2">Date & Time</th>
-    //             </tr>
-    //         </thead>
-    //         <tbody>
-    //             {records.length > 0 ? (
-    //                 records.map((record, index) => (
-    //                     <tr key={index}>
-    //                         <td className="border border-gray-300 px-4 py-2">{record.tag}</td>
-    //                         <td className="border border-gray-300 px-4 py-2">${record.amount}</td>
-    //                         <td className="border border-gray-300 px-4 py-2">{record.datetime}</td>
-    //                     </tr>
-    //                 ))
-    //             ) : (
-    //                 <tr>
-    //                     <td colSpan="3" className="text-center border border-gray-300 px-4 py-2">
-    //                         No records yet
-    //                     </td>
-    //                 </tr>
-    //             )}
-    //         </tbody>
-    //     </table>
-    // );
     const [tagFilter, setTagFilter] = useState('');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');

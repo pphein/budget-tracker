@@ -1356,64 +1356,67 @@ const App = () => {
       )}
 
       {/* --- Transaction Display Section --- */}
-      <div className="bg-gray-200 p-2 sm:p-4 mt-4 w-full">
+      
         {activeTab === "balance" ? (
-          <div className="w-full">
-            <h2 className="text-lg sm:text-xl font-bold mb-4 text-blue-500">Daily Balance</h2>
-            <div className="">
-              <table className="w-full border-collapse border border-gray-400 text-sm sm:text-base">
-                <thead>
-                  <tr className="bg-gray-300">
-                    <th className="border border-gray-400 p-2">Date</th>
-                    <th className="border border-gray-400 p-2">Total Income</th>
-                    <th className="border border-gray-400 p-2">Total Expense</th>
-                    <th className="border border-gray-400 p-2">Net</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {Object.values(
-                    transactions.reduce((acc, t) => {
-                      const day = new Date(t.date).toISOString().split("T")[0];
-                      if (!acc[day]) acc[day] = { date: day, income: 0, expense: 0 };
-                      if (t.type === "income") acc[day].income += parseFloat(t.amount || 0);
-                      if (t.type === "expense") acc[day].expense += parseFloat(t.amount || 0);
-                      return acc;
-                    }, {})
-                  ).map((row) => (
-                    <tr key={row.date}>
-                      <td className="border border-gray-400 p-2">{row.date}</td>
-                      <td className="border border-gray-400 p-2 text-green-600">${row.income}</td>
-                      <td className="border border-gray-400 p-2 text-red-600">${row.expense}</td>
-                      <td className="border border-gray-400 p-2 font-bold text-blue-600">${row.income - row.expense}</td>
+          <div className="bg-gray-200 p-2 sm:p-4 mt-4 w-full">
+            <div className="w-full">
+              <h2 className="text-lg sm:text-xl font-bold mb-4 text-blue-500">Daily Balance</h2>
+              <div className="">
+                <table className="w-full border-collapse border border-gray-400 text-sm sm:text-base">
+                  <thead>
+                    <tr className="bg-gray-300">
+                      <th className="border border-gray-400 p-2">Date</th>
+                      <th className="border border-gray-400 p-2">Total Income</th>
+                      <th className="border border-gray-400 p-2">Total Expense</th>
+                      <th className="border border-gray-400 p-2">Net</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {Object.values(
+                      transactions.reduce((acc, t) => {
+                        const day = new Date(t.date).toISOString().split("T")[0];
+                        if (!acc[day]) acc[day] = { date: day, income: 0, expense: 0 };
+                        if (t.type === "income") acc[day].income += parseFloat(t.amount || 0);
+                        if (t.type === "expense") acc[day].expense += parseFloat(t.amount || 0);
+                        return acc;
+                      }, {})
+                    ).map((row) => (
+                      <tr key={row.date}>
+                        <td className="border border-gray-400 p-2">{row.date}</td>
+                        <td className="border border-gray-400 p-2 text-green-600">${row.income}</td>
+                        <td className="border border-gray-400 p-2 text-red-600">${row.expense}</td>
+                        <td className="border border-gray-400 p-2 font-bold text-blue-600">${row.income - row.expense}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
-        ) : (
-          <>
-            <Filter
-              tags={tags}
-              selectedTag={selectedTag}
-              setSelectedTag={setSelectedTag}
-              startDate={startDate}
-              setStartDate={setStartDate}
-              endDate={formatDateTime(endDate)}
-              setEndDate={setEndDate}
-              formatDateTime={formatDateTime}
-            />
-            <RecordList
-              className="mt-4"
-              type={type}
-              records={filteredRecords}
-              handleDeleteTransaction={handleDeleteTransaction}
-              handleEditTransaction={handleEditTransaction}
-              formatDateTime={formatDateTime}
-            />
-          </>
+          ) : (
+          <div className="bg-gray-200 p-2 sm:p-4 mt-4 w-full overflow-x-auto">
+            <>
+              <Filter
+                tags={tags}
+                selectedTag={selectedTag}
+                setSelectedTag={setSelectedTag}
+                startDate={startDate}
+                setStartDate={setStartDate}
+                endDate={formatDateTime(endDate)}
+                setEndDate={setEndDate}
+                formatDateTime={formatDateTime}
+              />
+              <RecordList
+                className="mt-4"
+                type={type}
+                records={filteredRecords}
+                handleDeleteTransaction={handleDeleteTransaction}
+                handleEditTransaction={handleEditTransaction}
+                formatDateTime={formatDateTime}
+              />
+            </>
+          </div>
         )}
-      </div>
     </div>
   );
 };
