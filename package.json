@@ -6,6 +6,7 @@
     "@capacitor/android": "^7.1.0",
     "@capacitor/cli": "^7.1.0",
     "@capacitor/core": "^7.1.0",
+    "@headlessui/react": "^2.2.9",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.2.0",
