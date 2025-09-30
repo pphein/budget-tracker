@@ -1356,11 +1356,11 @@ const App = () => {
       )}
 
       {/* --- Transaction Display Section --- */}
-      <div className="bg-gray-200 p-2 sm:p-4 mt-4 w-full overflow-x-auto">
+      <div className="bg-gray-200 p-2 sm:p-4 mt-4 w-full">
         {activeTab === "balance" ? (
           <div className="w-full">
             <h2 className="text-lg sm:text-xl font-bold mb-4 text-blue-500">Daily Balance</h2>
-            <div className="overflow-x-auto">
+            <div className="">
               <table className="w-full border-collapse border border-gray-400 text-sm sm:text-base">
                 <thead>
                   <tr className="bg-gray-300">
