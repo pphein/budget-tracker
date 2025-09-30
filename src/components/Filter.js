@@ -48,6 +48,7 @@ const Filter = ({ tags, selectedTag, setSelectedTag, start, setStartDate, end, s
                 }}
                 selectsRange
                 withPortal
+                usePointerEvent
             />    
         </div>
     );
