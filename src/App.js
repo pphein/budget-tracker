@@ -538,6 +538,9 @@ const App = () => {
   //   />
   // ));
 
+  const ExampleCustomInput = forwardRef(({ value, onClick, className }, ref) => <button className={className} onClick={onClick} ref={ref}>
+      {value}
+    </button>)
 
   return (
     <div
@@ -594,13 +597,22 @@ const App = () => {
             </div>
             <div>
               <label className="block">Date:</label>
-              <DatePicker
+              {/* <DatePicker
                 selected={date}
                 onChange={(date) => setDate(formatDateTime(date))}
                 dateFormat="dd-MM-YYYY"
                 showIcon
                 className="w-full p-2 border rounded"
                 withPortal={true}
+                disabledKeyboardNavigation
+              /> */}
+              <DatePicker
+                toggleCalendarOnIconClick
+                selected={date}
+                dateFormat={"dd-MM-yyyy"}
+                onChange={(date) => setDate(date)}
+                customInput={<ExampleCustomInput className="p-2 border rounded w-full" />}
+                withPortal
               />
             </div>
             <div>
