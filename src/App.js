@@ -534,6 +534,7 @@ const App = () => {
       onClick={onClick}
       readOnly  // ✅ prevents typing
       ref={ref}
+      inputMode='none'
     />
   ));
 
@@ -601,7 +602,6 @@ const App = () => {
                 // ✅ Prevent typing into datepicker
                 customInput={<CustomInput />}
                 readOnly
-                inputMode="none"
               />
             </div>
             <div>
