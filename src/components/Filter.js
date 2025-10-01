@@ -55,6 +55,15 @@ const Filter = ({ tags, selectedTag, setSelectedTag, start, setStartDate, end, s
                     leaveTo="opacity-0"
                     >
                     <Listbox.Options className="absolute mt-1 max-h-60 w-full overflow-auto rounded bg-white py-1 shadow-lg ring-1 ring-black/10 focus:outline-none z-10">
+                        <Listbox.Option
+                            
+                            className={({ active }) =>
+                            `relative cursor-pointer select-none py-2 pl-10 pr-4 ${
+                                active ? "bg-blue-100 text-blue-900" : "text-gray-900"
+                            }`
+                            }
+                            value=""
+                        >{"All Tags"}</Listbox.Option>
                         {tags.map((t) => (
                         <Listbox.Option
                             key={t.id}
