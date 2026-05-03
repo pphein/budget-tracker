@@ -1,91 +1,87 @@
 import { openDB } from "idb";
 
-// Initialize the database
 const initDB = async () => {
-  return openDB("BudgetTrackerDB", 4, {
-    upgrade(db) {
+  return openDB("BudgetTrackerDB", 5, {
+    upgrade(db, oldVersion, newVersion, transaction) {
       if (!db.objectStoreNames.contains("transactions")) {
         db.createObjectStore("transactions", { keyPath: "id", autoIncrement: true });
       }
       if (!db.objectStoreNames.contains("tags")) {
-        const tags = db.createObjectStore("tags", { keyPath: "id", autoIncrement: true });
-        tags.transaction.oncomplete = () => {
-            const defaultData = [
-                { id: 1, name: "Taxi Fee", type: "expense" },
-                { id: 2, name: "Salary", type: "income" },
-            ];
-            const tx = db.transaction("tags", "readwrite");
-            const store = tx.objectStore("tags");
-            defaultData.forEach((item) => store.add(item));
+        const tagsStore = db.createObjectStore("tags", { keyPath: "id", autoIncrement: true });
+        tagsStore.transaction.oncomplete = () => {
+          const defaultData = [
+            { id: 1, name: "Taxi Fee", type: "expense", colorIndex: 0 },
+            { id: 2, name: "Salary",   type: "income",  colorIndex: 1 },
+          ];
+          const tx = db.transaction("tags", "readwrite");
+          const store = tx.objectStore("tags");
+          defaultData.forEach((item) => store.add(item));
+        };
+      } else if (oldVersion < 5) {
+        // Backfill colorIndex on existing tags
+        const store = transaction.objectStore("tags");
+        const req = store.openCursor();
+        req.onsuccess = (e) => {
+          const cursor = e.target.result;
+          if (!cursor) return;
+          if (cursor.value.colorIndex === undefined) {
+            cursor.update({ ...cursor.value, colorIndex: cursor.value.id % 10 });
+          }
+          cursor.continue();
         };
       }
-    }
+    },
   });
 };
 
-// const intiTags = async () => {
-//     const db = await initDB();
-//     const tx = db.transaction("tags", "readwrite");
-//     const store = tx.objectStore("tags");
-//     const defaultData = [
-//         { id: 1, name: "Taxi Fee", type: "expense" },
-//         { id: 2, name: "Salary", type: "income" },
-//     ];
-//     defaultData.forEach((item) => store.add(item));    
-// }
-
-// Add transaction
 export const addTransaction = async (transaction) => {
   const db = await initDB();
   const tx = db.transaction("transactions", "readwrite");
-  const store = tx.objectStore("transactions");
-  await store.add(transaction);
+  await tx.objectStore("transactions").add(transaction);
 };
 
-// Get all transactions
 export const getTransactions = async () => {
   const db = await initDB();
   return db.getAll("transactions");
 };
 
-// Delete transaction
 export const deleteTransaction = async (id) => {
   const db = await initDB();
   const tx = db.transaction("transactions", "readwrite");
-  const store = tx.objectStore("transactions");
-  await store.delete(id);
-};
-// Edit transaction
-export const editTransaction = async (id, updatedTransaction) => {
-    const db = await initDB();
-    const tx = db.transaction("transactions", "readwrite");
-    const store = tx.objectStore("transactions");
-    const existingTransaction = await store.get(id);
-    if (!existingTransaction) {
-        throw new Error(`Transaction with id ${id} not found`);
-    }
-    const updatedData = { ...existingTransaction, ...updatedTransaction };
-    await store.put(updatedData);
+  await tx.objectStore("transactions").delete(id);
 };
 
-// Add tag
+export const editTransaction = async (id, updatedTransaction) => {
+  const db = await initDB();
+  const tx = db.transaction("transactions", "readwrite");
+  const store = tx.objectStore("transactions");
+  const existing = await store.get(id);
+  if (!existing) throw new Error(`Transaction with id ${id} not found`);
+  await store.put({ ...existing, ...updatedTransaction });
+};
+
 export const addTag = async (tag) => {
-    const db = await initDB();
-    const tx = db.transaction("tags", "readwrite");
-    const store = tx.objectStore("tags");
-    await store.add(tag);
-  };
-  
-  // Get all tags
-  export const getTags = async () => {
-    const db = await initDB();
-    return db.getAll("tags");
-  };
-  
-  // Delete tag
-  export const deleteTag = async (id) => {
-    const db = await initDB();
-    const tx = db.transaction("tags", "readwrite");
-    const store = tx.objectStore("tags");
-    await store.delete(id);
-  };
+  const db = await initDB();
+  const tx = db.transaction("tags", "readwrite");
+  await tx.objectStore("tags").add(tag);
+};
+
+export const getTags = async () => {
+  const db = await initDB();
+  return db.getAll("tags");
+};
+
+export const deleteTag = async (id) => {
+  const db = await initDB();
+  const tx = db.transaction("tags", "readwrite");
+  await tx.objectStore("tags").delete(id);
+};
+
+export const editTag = async (id, updatedTag) => {
+  const db = await initDB();
+  const tx = db.transaction("tags", "readwrite");
+  const store = tx.objectStore("tags");
+  const existing = await store.get(id);
+  if (!existing) throw new Error(`Tag with id ${id} not found`);
+  await store.put({ ...existing, ...updatedTag });
+};

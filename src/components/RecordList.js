@@ -1,175 +1,161 @@
 import React, { useState } from 'react';
 import { saveAs } from 'file-saver';
 import * as XLSX from 'xlsx';
+import { ChevronUpIcon, ChevronDownIcon, BanknotesIcon } from '@heroicons/react/24/outline';
+import { getTagColorClasses } from '../utils/tagColors';
 
-const RecordList = ({ type, records, handleDeleteTransaction, handleEditTransaction, formatDateTime }) => {
-    const [tagFilter, setTagFilter] = useState('');
-    const [startDate, setStartDate] = useState('');
-    const [endDate, setEndDate] = useState('');
+const SortIcon = ({ column, sortKey, sortDir }) => {
+  if (sortKey !== column) return <ChevronUpIcon className="w-3 h-3 inline ml-1 opacity-30" />;
+  return sortDir === 'asc'
+    ? <ChevronUpIcon className="w-3 h-3 inline ml-1 text-blue-500" />
+    : <ChevronDownIcon className="w-3 h-3 inline ml-1 text-blue-500" />;
+};
 
-    const exportToExcel = () => {
-        const worksheet = XLSX.utils.json_to_sheet(filteredRecords.map(record => ({
-            Tag: record.tag,
-            Amount: record.amount,
-            DateTime: record.date,
-        })));
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, 'Records');
-        const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-        const data = new Blob([excelBuffer], { type: 'application/octet-stream' });
-        const date = new Date().toISOString().slice(0, 10).toLocaleString();
-        saveAs(data, 
-            type 
-            +'_records_'
-            +date
-            +'.xlsx');
-    };
-    
-    const filteredRecords = records.filter((record) => {
-        const recordDate = new Date(record.datetime);
-        const isTagMatch = tagFilter ? record.tag.toLowerCase().includes(tagFilter.toLowerCase()) : true;
-        const isStartDateMatch = startDate ? recordDate >= new Date(startDate) : true;
-        const isEndDateMatch = endDate ? recordDate <= new Date(endDate) : true;
-        return isTagMatch && isStartDateMatch && isEndDateMatch;
-    });
+const fmt = (n) => new Intl.NumberFormat().format(n);
 
-    const totalAmount = filteredRecords.reduce((sum, record) => sum + Number(record.amount), 0);
+const RecordList = ({ type, records, allTags, handleDeleteTransaction, handleEditTransaction, formatDateTime }) => {
+  const [sortKey, setSortKey] = useState('date');
+  const [sortDir, setSortDir] = useState('desc');
 
-    
-    const formatAmount = (amount) => {
-        return new Intl.NumberFormat("en-US", {
-            // style: "currency",
-            // currency: "MMK",
-        }).format(amount);  
-    }
+  const toggleSort = (key) => {
+    if (sortKey === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    else { setSortKey(key); setSortDir('asc'); }
+  };
 
-    return (
-        <div className='w-container'>
-            <table className="table-auto w-full border-collapse border border-gray-300">
-                <thead>
-                    <tr>
-                        <th className="border border-gray-300 px-4 py-2">Tag</th>
-                        <th className="border border-gray-300 px-4 py-2">Amount</th>
-                        <th className="border border-gray-300 px-4 py-2">Date</th>
-                        <th className="border border-gray-300 px-4 py-2">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {filteredRecords.length > 0 ? (
-                        filteredRecords.map((record, index) => (
-                            <tr key={index}>
-                                <td className="border border-gray-300 px-4 py-2">{record.tag}</td>
-                                <td className="border border-gray-300 px-4 py-2 text-end">{formatAmount(record.amount)}</td>
-                                <td className="border border-gray-300 px-4 py-2">{formatDateTime(record.date)}</td>
-                                <td className="border border-gray-300 px-4 py-2">
-                                    <button className="bg-blue-500 text-white px-2 py-1 rounded" onClick={() => handleEditTransaction(record.id, record)}>Edit</button>
-                                    <button className="bg-red-500 text-white px-2 py-1 rounded" onClick={() => handleDeleteTransaction(record.id)}>Del</button>
-                                </td>
-                            </tr>
-                        ))
-                    ) : (
-                        <tr>
-                            <td colSpan="3" className="text-center border border-gray-300 px-4 py-2">
-                                No records found
-                            </td>
-                        </tr>
-                    )}
-                </tbody>
-                <tfoot>
-                    <tr>
-                        <td className="border border-gray-300 px-4 py-2 font-bold">Total</td>
-                        <td className="border border-gray-300 px-4 py-2 font-bold">${totalAmount}</td>
-                        <td className="border border-gray-300 px-4 py-2 font-bold"></td>
-                        <td className="border border-gray-300 px-4 py-2">
-                        <button
-                        className="bg-green-500 text-white px-4 py-2 rounded mt-4"
-                        onClick={exportToExcel}
-                    >
-                        Export
-                    </button>
-                        </td>
-                    </tr>
-                </tfoot>
-            </table>
-        </div>
+  const sorted = [...records].sort((a, b) => {
+    let av = a[sortKey];
+    let bv = b[sortKey];
+    if (sortKey === 'date')   { av = new Date(av); bv = new Date(bv); }
+    if (sortKey === 'amount') { av = Number(av);   bv = Number(bv);   }
+    if (av < bv) return sortDir === 'asc' ? -1 : 1;
+    if (av > bv) return sortDir === 'asc' ?  1 : -1;
+    return 0;
+  });
+
+  const totalAmount = sorted.reduce((sum, r) => sum + Number(r.amount), 0);
+
+  const getColor = (tagName) => {
+    if (!allTags) return null;
+    const found = allTags.find((t) => t.name === tagName);
+    return found ? getTagColorClasses(found.colorIndex) : null;
+  };
+
+  const exportToExcel = () => {
+    const worksheet = XLSX.utils.json_to_sheet(
+      sorted.map((r) => ({ Tag: r.tag, Amount: r.amount, Date: r.date }))
     );
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Records');
+    const buf = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    saveAs(
+      new Blob([buf], { type: 'application/octet-stream' }),
+      `${type}_records_${new Date().toISOString().slice(0, 10)}.xlsx`
+    );
+  };
+
+  if (sorted.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-gray-400 dark:text-gray-500">
+        <BanknotesIcon className="w-16 h-16 mb-4 opacity-40" />
+        <p className="text-base font-medium">No {type} records yet.</p>
+        <p className="text-sm mt-1">Use the form above to add your first entry.</p>
+      </div>
+    );
+  }
+
+  let running = 0;
+
+  return (
+    <div className="w-full overflow-x-auto">
+      <table className="table-auto w-full border-collapse border border-gray-300 dark:border-gray-600 text-sm">
+        <thead>
+          <tr className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200">
+            <th
+              className="border border-gray-300 dark:border-gray-600 px-3 py-2 cursor-pointer select-none text-left"
+              onClick={() => toggleSort('tag')}
+            >
+              Tag <SortIcon column="tag" sortKey={sortKey} sortDir={sortDir} />
+            </th>
+            <th
+              className="border border-gray-300 dark:border-gray-600 px-3 py-2 cursor-pointer select-none text-right"
+              onClick={() => toggleSort('amount')}
+            >
+              Amount <SortIcon column="amount" sortKey={sortKey} sortDir={sortDir} />
+            </th>
+            <th
+              className="border border-gray-300 dark:border-gray-600 px-3 py-2 cursor-pointer select-none text-left"
+              onClick={() => toggleSort('date')}
+            >
+              Date <SortIcon column="date" sortKey={sortKey} sortDir={sortDir} />
+            </th>
+            <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-right">Running</th>
+            <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sorted.map((record, index) => {
+            running += Number(record.amount);
+            const color = getColor(record.tag);
+            return (
+              <tr key={record.id ?? index} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
+                  {color ? (
+                    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${color.bg}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${color.dot}`} />
+                      {record.tag}
+                    </span>
+                  ) : (
+                    <span className="text-gray-800 dark:text-gray-200">{record.tag}</span>
+                  )}
+                </td>
+                <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-right text-gray-800 dark:text-gray-200 font-medium">
+                  {fmt(record.amount)}
+                </td>
+                <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                  {formatDateTime(record.date)}
+                </td>
+                <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-right text-gray-400 dark:text-gray-500 text-xs">
+                  {fmt(running)}
+                </td>
+                <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
+                  <div className="flex gap-1 justify-center">
+                    <button
+                      className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-xs"
+                      onClick={() => handleEditTransaction(record)}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs"
+                      onClick={() => handleDeleteTransaction(record)}
+                    >
+                      Del
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+        <tfoot>
+          <tr className="bg-gray-100 dark:bg-gray-700 font-bold text-gray-700 dark:text-gray-200">
+            <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">Total</td>
+            <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-right">{fmt(totalAmount)}</td>
+            <td className="border border-gray-300 dark:border-gray-600 px-3 py-2" />
+            <td className="border border-gray-300 dark:border-gray-600 px-3 py-2" />
+            <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center">
+              <button
+                onClick={exportToExcel}
+                className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs font-medium"
+              >
+                Export
+              </button>
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  );
 };
 
 export default RecordList;
-
-// const FilterableRecordList = ({ records }) => {
-//     const [tagFilter, setTagFilter] = useState('');
-//     const [startDate, setStartDate] = useState('');
-//     const [endDate, setEndDate] = useState('');
-
-//     const filteredRecords = records.filter((record) => {
-//         const recordDate = new Date(record.datetime);
-//         const isTagMatch = tagFilter ? record.tag.toLowerCase().includes(tagFilter.toLowerCase()) : true;
-//         const isStartDateMatch = startDate ? recordDate >= new Date(startDate) : true;
-//         const isEndDateMatch = endDate ? recordDate <= new Date(endDate) : true;
-//         return isTagMatch && isStartDateMatch && isEndDateMatch;
-//     });
-
-//     const totalAmount = filteredRecords.reduce((sum, record) => sum + record.amount, 0);
-
-//     return (
-//         <div>
-//             <div className="mb-4">
-//                 <input
-//                     type="text"
-//                     placeholder="Filter by tag"
-//                     value={tagFilter}
-//                     onChange={(e) => setTagFilter(e.target.value)}
-//                     className="border px-2 py-1 mr-2"
-//                 />
-//                 <input
-//                     type="date"
-//                     value={startDate}
-//                     onChange={(e) => setStartDate(e.target.value)}
-//                     className="border px-2 py-1 mr-2"
-//                 />
-//                 <input
-//                     type="date"
-//                     value={endDate}
-//                     onChange={(e) => setEndDate(e.target.value)}
-//                     className="border px-2 py-1"
-//                 />
-//             </div>
-//             <table className="table-auto w-full border-collapse border border-gray-300">
-//                 <thead>
-//                     <tr>
-//                         <th className="border border-gray-300 px-4 py-2">Tag</th>
-//                         <th className="border border-gray-300 px-4 py-2">Amount</th>
-//                         <th className="border border-gray-300 px-4 py-2">Date & Time</th>
-//                     </tr>
-//                 </thead>
-//                 <tbody>
-//                     {filteredRecords.length > 0 ? (
-//                         filteredRecords.map((record, index) => (
-//                             <tr key={index}>
-//                                 <td className="border border-gray-300 px-4 py-2">{record.tag}</td>
-//                                 <td className="border border-gray-300 px-4 py-2">${record.amount}</td>
-//                                 <td className="border border-gray-300 px-4 py-2">{record.datetime}</td>
-//                             </tr>
-//                         ))
-//                     ) : (
-//                         <tr>
-//                             <td colSpan="3" className="text-center border border-gray-300 px-4 py-2">
-//                                 No records found
-//                             </td>
-//                         </tr>
-//                     )}
-//                 </tbody>
-//                 <tfoot>
-//                     <tr>
-//                         <td className="border border-gray-300 px-4 py-2 font-bold">Total</td>
-//                         <td className="border border-gray-300 px-4 py-2 font-bold">${totalAmount}</td>
-//                         <td className="border border-gray-300 px-4 py-2"></td>
-//                     </tr>
-//                 </tfoot>
-//             </table>
-//         </div>
-//     );
-// };
-
-// export default FilterableRecordList;
