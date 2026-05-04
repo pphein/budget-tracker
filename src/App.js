@@ -32,15 +32,6 @@ const DateBtn = forwardRef(({ value, onClick, className }, ref) => (
   <button className={className} onClick={onClick} ref={ref}>{value}</button>
 ));
 
-const BalanceDateBtn = forwardRef(({ value, onClick }, ref) => (
-  <button
-    ref={ref}
-    onClick={onClick}
-    className="w-full text-left p-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
-  >
-    {value || 'All dates'}
-  </button>
-));
 
 const App = () => {
   const [activeTab, setActiveTab]       = useState('income');
@@ -102,12 +93,6 @@ const App = () => {
     return `${y}-${m}-${day}`;
   };
 
-  // Parse "YYYY-MM-DD" → local midnight Date (avoid UTC-offset issue)
-  const parseLocalDate = (str) => {
-    if (!str) return null;
-    const [y, mo, d] = str.split('-').map(Number);
-    return new Date(y, mo - 1, d);
-  };
 
   // ─── Data loading ─────────────────────────────────────────────────────────
   const loadAll = async () => {
