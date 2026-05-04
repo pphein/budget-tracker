@@ -1,23 +1,34 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { Capacitor } from '@capacitor/core';
+import { CapacitorSQLite, SQLiteConnection } from '@capacitor-community/sqlite';
+import { defineCustomElements as jeepSqlite } from 'jeep-sqlite/loader';
 import './index.css';
 import App from './App';
-import { getInitialColorTheme, applyColorTheme } from './utils/colorTheme';
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
+import { getInitialColorTheme, applyColorTheme } from './utils/colorTheme';
 
 // Apply saved color theme before first render to avoid flash
 applyColorTheme(getInitialColorTheme());
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+// Register the jeep-sqlite web component (required for web/PWA SQLite)
+jeepSqlite(window);
 
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
-// reportWebVitals();
+const initSQLiteAndRender = async () => {
+  if (!Capacitor.isNativePlatform()) {
+    // Web / PWA: wait for the custom element then initialise the web store
+    await customElements.whenDefined('jeep-sqlite');
+    const sqlite = new SQLiteConnection(CapacitorSQLite);
+    await sqlite.initWebStore();
+  }
 
+  const root = ReactDOM.createRoot(document.getElementById('root'));
+  root.render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>
+  );
+};
+
+initSQLiteAndRender();
 serviceWorkerRegistration.register();
