@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { XMarkIcon, PencilIcon, TrashIcon, CheckIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, PencilIcon, TrashIcon, CheckIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { getTagColorClasses } from '../utils/tagColors';
 
-const TagsManagementModal = ({ isOpen, onClose, allTags, onAdd, onDelete, onEdit, activeType }) => {
+const TagsManagementModal = ({ isOpen, onClose, allTags, onAdd, onDelete, onEdit, onSync, activeType }) => {
   const [tabType, setTabType]       = useState(activeType || 'income');
   const [newTagName, setNewTagName] = useState('');
   const [editingId, setEditingId]   = useState(null);
@@ -52,9 +52,19 @@ const TagsManagementModal = ({ isOpen, onClose, allTags, onAdd, onDelete, onEdit
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
         <h2 className="text-lg font-bold text-gray-800 dark:text-white">Manage Tags</h2>
-        <button onClick={onClose} className="p-2 text-gray-500 dark:text-gray-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
-          <XMarkIcon className="w-6 h-6" />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={onSync}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs font-medium hover:bg-blue-100 dark:hover:bg-blue-900/50"
+            title="Sync default tags"
+          >
+            <ArrowPathIcon className="w-3.5 h-3.5" />
+            Sync
+          </button>
+          <button onClick={onClose} className="p-2 text-gray-500 dark:text-gray-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+            <XMarkIcon className="w-6 h-6" />
+          </button>
+        </div>
       </div>
 
       {/* Type tabs */}

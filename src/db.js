@@ -128,6 +128,31 @@ export const deleteTag = async (id) => {
   await tx.objectStore("tags").delete(id);
 };
 
+export const clearTagsByType = async (type) => {
+  const db = await initDB();
+  const all = await db.getAll("tags");
+  const tx = db.transaction("tags", "readwrite");
+  const store = tx.objectStore("tags");
+  all.filter((t) => t.type === type).forEach((t) => store.delete(t.id));
+  await tx.done;
+};
+
+// Adds any DEFAULT_TAGS missing from the local DB — safe to call anytime
+export const syncDefaultTags = async () => {
+  const db = await initDB();
+  const existing = await db.getAll("tags");
+  const existingNames = existing.map((t) => t.name.toLowerCase());
+  const tx = db.transaction("tags", "readwrite");
+  const store = tx.objectStore("tags");
+  DEFAULT_TAGS.forEach((tag) => {
+    if (!existingNames.includes(tag.name.toLowerCase())) {
+      store.add(tag);
+    }
+  });
+  await tx.done;
+  return db.getAll("tags"); // return updated list
+};
+
 export const editTag = async (id, updatedTag) => {
   const db = await initDB();
   const tx = db.transaction("tags", "readwrite");

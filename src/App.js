@@ -21,7 +21,7 @@ import SkeletonRows from './components/SkeletonRows';
 import { getTagColorClasses } from './utils/tagColors';
 import {
   addTransaction, getTransactions, deleteTransaction, editTransaction,
-  getTags, addTag, deleteTag, editTag,
+  getTags, addTag, deleteTag, editTag, syncDefaultTags,
 } from './db';
 
 const MONTH_LABELS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -232,6 +232,14 @@ const App = () => {
     await editTag(id, updates);
     await reloadTags();
     showToast('Tag updated');
+  };
+
+  const handleSyncTags = async () => {
+    const updated = await syncDefaultTags();
+    setAllTags(updated);
+    const typeTags = updated.filter((t) => t.type === activeTab);
+    setTags(typeTags);
+    showToast('Tags synced');
   };
 
   // ─── Shared year+month filter ──────────────────────────────────────────────
@@ -567,6 +575,7 @@ const App = () => {
         onAdd={handleAddTag}
         onDelete={handleDeleteTag}
         onEdit={handleEditTag}
+        onSync={handleSyncTags}
         activeType={activeTab !== 'balance' ? activeTab : 'income'}
       />
 
