@@ -6,9 +6,13 @@ import {
   TagIcon,
   ArrowDownTrayIcon,
   CheckIcon,
+  ArrowPathIcon,
+  EyeIcon,
+  EyeSlashIcon,
 } from '@heroicons/react/24/outline';
 import { ChevronRightIcon } from '@heroicons/react/20/solid';
 import { COLOR_THEMES } from '../utils/colorTheme';
+import { getGoldApiKey, saveGoldApiKey, fetchWorldGoldPrice } from '../utils/goldPrice';
 
 const SettingsModal = ({
   isOpen,
@@ -27,21 +31,52 @@ const SettingsModal = ({
   const [myanmarInput, setMyanmarInput] = useState('');
   const [goldSaved, setGoldSaved]       = useState(false);
 
+  const [apiKey, setApiKey]             = useState('');
+  const [showApiKey, setShowApiKey]     = useState(false);
+  const [fetching, setFetching]         = useState(false);
+  const [fetchError, setFetchError]     = useState('');
+
   useEffect(() => {
     if (isOpen) {
       setWorldInput(goldPrices?.worldPrice ?? '');
       setMyanmarInput(goldPrices?.myanmarPrice ?? '');
       setGoldSaved(false);
+      setFetchError('');
+      setApiKey(getGoldApiKey());
     }
   }, [isOpen, goldPrices]);
 
   const handleSaveGold = () => {
+    if (apiKey.trim()) saveGoldApiKey(apiKey.trim());
     onSaveGoldPrices({
       worldPrice:   worldInput   ? parseFloat(worldInput)   : null,
       myanmarPrice: myanmarInput ? parseFloat(myanmarInput) : null,
     });
     setGoldSaved(true);
     setTimeout(() => setGoldSaved(false), 2000);
+  };
+
+  const handleFetchLive = async () => {
+    const key = apiKey.trim();
+    if (!key) { setFetchError('Enter your goldapi.io API key first'); return; }
+    setFetching(true);
+    setFetchError('');
+    try {
+      const price = await fetchWorldGoldPrice(key);
+      saveGoldApiKey(key);
+      setWorldInput(price);
+      // auto-save immediately with new world price
+      onSaveGoldPrices({
+        worldPrice: price,
+        myanmarPrice: myanmarInput ? parseFloat(myanmarInput) : null,
+      });
+      setGoldSaved(true);
+      setTimeout(() => setGoldSaved(false), 2000);
+    } catch (err) {
+      setFetchError(err.message || 'Failed to fetch price');
+    } finally {
+      setFetching(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -132,20 +167,68 @@ const SettingsModal = ({
               <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
                 World Gold (USD / oz)
               </label>
-              <input
-                type="number"
-                inputMode="decimal"
-                value={worldInput}
-                onChange={(e) => setWorldInput(e.target.value)}
-                placeholder="e.g. 2350"
-                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400"
-              />
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  value={worldInput}
+                  onChange={(e) => { setWorldInput(e.target.value); setFetchError(''); }}
+                  placeholder="e.g. 2350"
+                  className="flex-1 min-w-0 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400"
+                />
+                <button
+                  onClick={handleFetchLive}
+                  disabled={fetching}
+                  title="Fetch live price from goldapi.io"
+                  className="flex items-center gap-1.5 px-3 py-2.5 rounded-lg bg-yellow-500 hover:bg-yellow-600 active:bg-yellow-700 disabled:opacity-50 text-white text-xs font-medium flex-shrink-0 transition-colors"
+                >
+                  <ArrowPathIcon className={`w-4 h-4 ${fetching ? 'animate-spin' : ''}`} />
+                  {fetching ? 'Fetching…' : 'Live'}
+                </button>
+              </div>
+            </div>
+
+            {/* goldapi.io API key */}
+            <div>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
+                goldapi.io API Key
+                <a
+                  href="https://www.goldapi.io"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ml-2 text-[var(--primary-500)] hover:underline"
+                >
+                  (free — 100 req/month)
+                </a>
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type={showApiKey ? 'text' : 'password'}
+                  value={apiKey}
+                  onChange={(e) => { setApiKey(e.target.value); setFetchError(''); }}
+                  placeholder="goldapi-xxxxxxxxxxxx-io"
+                  className="flex-1 min-w-0 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 font-mono"
+                />
+                <button
+                  onClick={() => setShowApiKey((v) => !v)}
+                  className="px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
+                  title={showApiKey ? 'Hide key' : 'Show key'}
+                >
+                  {showApiKey
+                    ? <EyeSlashIcon className="w-4 h-4" />
+                    : <EyeIcon      className="w-4 h-4" />}
+                </button>
+              </div>
+              {fetchError && (
+                <p className="mt-1.5 text-xs text-red-500">{fetchError}</p>
+              )}
             </div>
 
             {/* Myanmar gold */}
             <div>
               <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
                 Myanmar Gold (MMK / ကျပ်)
+                <span className="ml-2 text-gray-400 font-normal">manual</span>
               </label>
               <input
                 type="number"
@@ -157,6 +240,7 @@ const SettingsModal = ({
               />
             </div>
 
+            {/* Footer row */}
             <div className="flex items-center justify-between pt-1">
               <span className="text-xs text-gray-400 dark:text-gray-500">
                 {goldPrices?.updatedAt
