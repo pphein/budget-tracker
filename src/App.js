@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useRef, forwardRef, Fragment } from 'react';
-import { Listbox, Transition } from '@headlessui/react';
-import { CheckIcon, ChevronUpDownIcon, Cog6ToothIcon, ArrowDownTrayIcon } from '@heroicons/react/20/solid';
+import React, { useState, useEffect, useRef, forwardRef } from 'react';
+import { Cog6ToothIcon, ArrowDownTrayIcon } from '@heroicons/react/20/solid';
 import { ChevronRightIcon, SunIcon, MoonIcon, ArrowDownTrayIcon as DownloadIcon } from '@heroicons/react/24/outline';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
@@ -18,7 +17,7 @@ import DeleteConfirmModal from './components/DeleteConfirmModal';
 import TagsManagementModal from './components/TagsManagementModal';
 import BalanceChart from './components/BalanceChart';
 import SkeletonRows from './components/SkeletonRows';
-import { getTagColorClasses } from './utils/tagColors';
+import TagSelect from './components/TagSelect';
 import {
   addTransaction, getTransactions, deleteTransaction, editTransaction,
   getTags, addTag, deleteTag, editTag, syncDefaultTags,
@@ -51,7 +50,7 @@ const App = () => {
   const [tag, setTag]                   = useState('');
   const [amount, setAmount]             = useState('');
   const [date, setDate]                 = useState(new Date());
-  const [selectedTag, setSelectedTag]   = useState('');
+  const [selectedTags, setSelectedTags] = useState([]);
   const [filterYears, setFilterYears]   = useState([new Date().getFullYear()]); // [] = all years
   const [filterMonths, setFilterMonths] = useState([new Date().getMonth() + 1]); // [] = all months
   const [filterOpen, setFilterOpen]     = useState(false);
@@ -178,7 +177,7 @@ const App = () => {
 
   const handleTabChange = (t) => {
     setActiveTab(t);
-    setSelectedTag('');
+    setSelectedTags([]);
   };
 
   // ─── Transactions ─────────────────────────────────────────────────────────
@@ -275,7 +274,7 @@ const App = () => {
   // ─── Filtered records ─────────────────────────────────────────────────────
   const filteredRecords = transactions.filter((r) => {
     if (r.type !== activeTab) return false;
-    if (selectedTag && r.tag !== selectedTag) return false;
+    if (selectedTags.length > 0 && !selectedTags.includes(r.tag)) return false;
     return matchesFilter(r.date);
   });
 
@@ -429,62 +428,8 @@ const App = () => {
             {/* Transaction form */}
             <div className="bg-white dark:bg-gray-900 rounded-xl px-3 pt-3 pb-2 mb-3 shadow-sm space-y-2">
 
-              {/* Row 1: Tag (full width) */}
-              <Listbox value={tag} onChange={setTag}>
-                <div className="relative">
-                  <Listbox.Button className="relative w-full cursor-pointer rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 py-2.5 pl-3 pr-10 text-left text-sm text-gray-800 dark:text-gray-200">
-                    {tag ? (
-                      (() => {
-                        const found = allTags.find((t) => t.name === tag);
-                        const c = found ? getTagColorClasses(found.colorIndex) : null;
-                        return c ? (
-                          <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${c.bg}`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />
-                            {tag}
-                          </span>
-                        ) : tag;
-                      })()
-                    ) : (
-                      <span className="text-gray-400">Select a tag…</span>
-                    )}
-                    <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                      <ChevronUpDownIcon className="h-5 w-5 text-gray-400" />
-                    </span>
-                  </Listbox.Button>
-                  <Transition as={Fragment} leave="transition ease-in duration-100" leaveFrom="opacity-100" leaveTo="opacity-0">
-                    <Listbox.Options className="absolute mt-1 max-h-60 w-full overflow-auto rounded-lg bg-white dark:bg-gray-700 py-1 shadow-lg ring-1 ring-black/10 z-10 text-sm">
-                      {tags.map((t) => {
-                        const c = getTagColorClasses(t.colorIndex);
-                        return (
-                          <Listbox.Option
-                            key={t.id}
-                            value={t.name}
-                            className={({ active }) =>
-                              `relative cursor-pointer select-none py-2 pl-10 pr-4 ${
-                                active ? 'bg-blue-100 dark:bg-blue-800 text-blue-900 dark:text-blue-100' : 'text-gray-900 dark:text-white'
-                              }`
-                            }
-                          >
-                            {({ selected }) => (
-                              <>
-                                <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${c.bg}`}>
-                                  <span className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />
-                                  {t.name}
-                                </span>
-                                {selected && (
-                                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-blue-600">
-                                    <CheckIcon className="h-4 w-4" />
-                                  </span>
-                                )}
-                              </>
-                            )}
-                          </Listbox.Option>
-                        );
-                      })}
-                    </Listbox.Options>
-                  </Transition>
-                </div>
-              </Listbox>
+              {/* Row 1: Tag (full width, searchable) */}
+              <TagSelect tags={tags} value={tag} onChange={setTag} />
 
               {/* Row 2: Date | Amount | Save */}
               <div className="flex gap-2 items-center">
@@ -526,8 +471,8 @@ const App = () => {
               <Filter
                 tags={tags}
                 allTags={allTags}
-                selectedTag={selectedTag}
-                setSelectedTag={setSelectedTag}
+                selectedTags={selectedTags}
+                setSelectedTags={setSelectedTags}
               />
               {loading ? (
                 <SkeletonRows count={4} />

@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MagnifyingGlassIcon, ChevronDownIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { CheckIcon } from '@heroicons/react/20/solid';
 import { getTagColorClasses } from '../utils/tagColors';
 
-// Multi-select searchable tag filter for record list
-const Filter = ({ tags, allTags, selectedTags, setSelectedTags }) => {
+// Single-select searchable tag dropdown for transaction form
+const TagSelect = ({ tags, value, onChange, placeholder = 'Select a tag…' }) => {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const ref = useRef(null);
@@ -16,47 +16,28 @@ const Filter = ({ tags, allTags, selectedTags, setSelectedTags }) => {
   }, []);
 
   const filtered = tags.filter((t) => t.name.toLowerCase().includes(search.toLowerCase()));
-
-  const toggle = (name) =>
-    setSelectedTags((prev) =>
-      prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]
-    );
-
-  const getColor = (tagName) => {
-    const found = allTags.find((t) => t.name === tagName);
-    return found ? getTagColorClasses(found.colorIndex) : null;
-  };
+  const selected = tags.find((t) => t.name === value);
+  const selectedColor = selected ? getTagColorClasses(selected.colorIndex) : null;
 
   return (
-    <div className="relative mb-3" ref={ref}>
+    <div className="relative" ref={ref}>
       {/* Trigger */}
       <button
         type="button"
         onClick={() => { setOpen((o) => !o); setSearch(''); }}
-        className="w-full flex items-center gap-2 min-h-[40px] px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-left"
+        className="relative w-full cursor-pointer rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 py-2.5 pl-3 pr-10 text-left text-sm text-gray-800 dark:text-gray-200"
       >
-        {selectedTags.length === 0 ? (
-          <span className="text-sm text-gray-400 flex-1">All Tags</span>
+        {selected && selectedColor ? (
+          <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${selectedColor.bg}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${selectedColor.dot}`} />
+            {selected.name}
+          </span>
         ) : (
-          <div className="flex flex-wrap gap-1 flex-1">
-            {selectedTags.map((name) => {
-              const c = getColor(name);
-              return (
-                <span key={name} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${c?.bg || 'bg-gray-100 dark:bg-gray-600'}`}>
-                  {name}
-                  <span
-                    role="button"
-                    onClick={(e) => { e.stopPropagation(); toggle(name); }}
-                    className="cursor-pointer"
-                  >
-                    <XMarkIcon className="w-3 h-3" />
-                  </span>
-                </span>
-              );
-            })}
-          </div>
+          <span className="text-gray-400">{placeholder}</span>
         )}
-        <ChevronDownIcon className={`w-4 h-4 text-gray-400 flex-shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+        <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+          <ChevronDownIcon className={`w-4 h-4 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+        </span>
       </button>
 
       {/* Dropdown */}
@@ -70,39 +51,25 @@ const Filter = ({ tags, allTags, selectedTags, setSelectedTags }) => {
                 autoFocus
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search tags…"
+                placeholder="Search…"
                 className="flex-1 text-sm bg-transparent outline-none text-gray-800 dark:text-gray-200 placeholder-gray-400"
               />
             </div>
           </div>
 
-          {/* All Tags */}
-          <button
-            type="button"
-            onClick={() => setSelectedTags([])}
-            className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 ${
-              selectedTags.length === 0 ? 'bg-blue-50 dark:bg-blue-900/20' : ''
-            }`}
-          >
-            {selectedTags.length === 0
-              ? <CheckIcon className="w-4 h-4 text-blue-500 flex-shrink-0" />
-              : <span className="w-4 flex-shrink-0" />}
-            <span className="text-gray-700 dark:text-gray-200 text-xs font-medium">All Tags</span>
-          </button>
-
-          {/* Tag list */}
+          {/* Options */}
           <div className="max-h-52 overflow-y-auto">
             {filtered.length === 0 ? (
               <p className="text-center text-gray-400 py-4 text-xs">No tags found</p>
             ) : (
               filtered.map((t) => {
                 const c = getTagColorClasses(t.colorIndex);
-                const sel = selectedTags.includes(t.name);
+                const sel = t.name === value;
                 return (
                   <button
                     key={t.id}
                     type="button"
-                    onClick={() => toggle(t.name)}
+                    onClick={() => { onChange(t.name); setOpen(false); setSearch(''); }}
                     className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 ${sel ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
                   >
                     {sel
@@ -123,4 +90,4 @@ const Filter = ({ tags, allTags, selectedTags, setSelectedTags }) => {
   );
 };
 
-export default Filter;
+export default TagSelect;
