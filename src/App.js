@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, forwardRef, Fragment } from 'react';
 import { Listbox, Transition } from '@headlessui/react';
 import { CheckIcon, ChevronUpDownIcon, Cog6ToothIcon, ArrowDownTrayIcon } from '@heroicons/react/20/solid';
-import { ChevronLeftIcon, ChevronRightIcon, SunIcon, MoonIcon } from '@heroicons/react/24/outline';
+import { ChevronLeftIcon, ChevronRightIcon, SunIcon, MoonIcon, ArrowDownTrayIcon as DownloadIcon } from '@heroicons/react/24/outline';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import DatePicker from 'react-datepicker';
@@ -57,6 +57,7 @@ const App = () => {
   const [filterOpen, setFilterOpen]     = useState(false);
   const [loading, setLoading]           = useState(true);
   const [theme, setTheme]               = useState(getInitialTheme);
+  const [installPrompt, setInstallPrompt] = useState(null);
 
   // Modals
   const [editingTx, setEditingTx]               = useState(null);
@@ -80,6 +81,20 @@ const App = () => {
   }, [theme]);
 
   const toggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
+
+  // PWA install prompt
+  useEffect(() => {
+    const handler = (e) => { e.preventDefault(); setInstallPrompt(e); };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstall = async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice;
+    if (outcome === 'accepted') setInstallPrompt(null);
+  };
 
   // ─── Helpers ──────────────────────────────────────────────────────────────
   const showToast = (message, type = 'success') => setToast({ message, type });
@@ -293,6 +308,16 @@ const App = () => {
       <header className="sticky top-0 z-30 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-between">
         <h1 className="text-lg font-bold text-gray-800 dark:text-white">Budget Tracker</h1>
         <div className="flex items-center gap-1">
+          {installPrompt && (
+            <button
+              onClick={handleInstall}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-500 text-white text-xs font-medium"
+              aria-label="Install app"
+            >
+              <DownloadIcon className="w-4 h-4" />
+              Install
+            </button>
+          )}
           <button
             onClick={toggleTheme}
             className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
