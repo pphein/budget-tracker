@@ -90,6 +90,22 @@ const App = () => {
     });
   };
 
+  // Convert a local Date → "YYYY-MM-DD" without UTC shift
+  const toLocalDateStr = (d) => {
+    if (!d) return null;
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
+  // Parse "YYYY-MM-DD" → local midnight Date (avoid UTC-offset issue)
+  const parseLocalDate = (str) => {
+    if (!str) return null;
+    const [y, mo, d] = str.split('-').map(Number);
+    return new Date(y, mo - 1, d);
+  };
+
   // ─── Data loading ─────────────────────────────────────────────────────────
   const loadAll = async () => {
     setLoading(true);
@@ -216,21 +232,23 @@ const App = () => {
   });
 
   // ─── Balance data ─────────────────────────────────────────────────────────
-  const balanceGroupKey = (isoDate) => {
-    if (balanceView === 'monthly') return isoDate.slice(0, 7); // YYYY-MM
-    if (balanceView === 'yearly')  return isoDate.slice(0, 4); // YYYY
-    return isoDate.slice(0, 10);                               // YYYY-MM-DD
+  // localDateStr is "YYYY-MM-DD" in local time
+  const balanceGroupKey = (localDateStr) => {
+    if (balanceView === 'monthly') return localDateStr.slice(0, 7); // YYYY-MM
+    if (balanceView === 'yearly')  return localDateStr.slice(0, 4); // YYYY
+    return localDateStr;                                             // YYYY-MM-DD
   };
 
   const balanceData = Object.values(
     transactions
       .filter((t) => {
         if (!balanceStart || !balanceEnd) return true;
-        const d = new Date(t.date);
-        return d >= new Date(balanceStart) && d <= new Date(balanceEnd);
+        // Compare as local date strings ("YYYY-MM-DD") — no UTC shift
+        const txLocal = toLocalDateStr(new Date(t.date));
+        return txLocal >= balanceStart && txLocal <= balanceEnd;
       })
       .reduce((acc, t) => {
-        const key = balanceGroupKey(new Date(t.date).toISOString().split('T')[0]);
+        const key = balanceGroupKey(toLocalDateStr(new Date(t.date)));
         if (!acc[key]) acc[key] = { date: key, income: 0, expense: 0 };
         if (t.type === 'income')  acc[key].income  += parseFloat(t.amount || 0);
         if (t.type === 'expense') acc[key].expense += parseFloat(t.amount || 0);
@@ -426,11 +444,11 @@ const App = () => {
               {balanceView === 'daily' && (
                 <DatePicker
                   selectsRange
-                  startDate={balanceStart ? new Date(balanceStart) : null}
-                  endDate={balanceEnd ? new Date(balanceEnd) : null}
+                  startDate={parseLocalDate(balanceStart)}
+                  endDate={parseLocalDate(balanceEnd)}
                   onChange={([start, end]) => {
-                    setBalanceStart(start ? start.toISOString().slice(0, 10) : null);
-                    setBalanceEnd(end ? end.toISOString() : null);
+                    setBalanceStart(toLocalDateStr(start));
+                    setBalanceEnd(toLocalDateStr(end));
                   }}
                   isClearable
                   withPortal
@@ -443,14 +461,15 @@ const App = () => {
               {balanceView === 'monthly' && (
                 <DatePicker
                   selectsRange
-                  startDate={balanceStart ? new Date(balanceStart) : null}
-                  endDate={balanceEnd ? new Date(balanceEnd) : null}
+                  startDate={parseLocalDate(balanceStart)}
+                  endDate={parseLocalDate(balanceEnd)}
                   onChange={([start, end]) => {
+                    // Snap to first day of start month, last day of end month
                     setBalanceStart(start
-                      ? new Date(start.getFullYear(), start.getMonth(), 1).toISOString().slice(0, 10)
+                      ? toLocalDateStr(new Date(start.getFullYear(), start.getMonth(), 1))
                       : null);
                     setBalanceEnd(end
-                      ? new Date(end.getFullYear(), end.getMonth() + 1, 0, 23, 59, 59).toISOString()
+                      ? toLocalDateStr(new Date(end.getFullYear(), end.getMonth() + 1, 0))
                       : null);
                   }}
                   showMonthYearPicker
@@ -465,15 +484,12 @@ const App = () => {
               {balanceView === 'yearly' && (
                 <DatePicker
                   selectsRange
-                  startDate={balanceStart ? new Date(balanceStart) : null}
-                  endDate={balanceEnd ? new Date(balanceEnd) : null}
+                  startDate={parseLocalDate(balanceStart)}
+                  endDate={parseLocalDate(balanceEnd)}
                   onChange={([start, end]) => {
-                    setBalanceStart(start
-                      ? new Date(start.getFullYear(), 0, 1).toISOString().slice(0, 10)
-                      : null);
-                    setBalanceEnd(end
-                      ? new Date(end.getFullYear(), 11, 31, 23, 59, 59).toISOString()
-                      : null);
+                    // Snap to Jan 1 of start year, Dec 31 of end year
+                    setBalanceStart(start ? `${start.getFullYear()}-01-01` : null);
+                    setBalanceEnd(end   ? `${end.getFullYear()}-12-31`   : null);
                   }}
                   showYearPicker
                   isClearable
