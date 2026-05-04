@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, forwardRef, Fragment } from 'react';
 import { Listbox, Transition } from '@headlessui/react';
-import { CheckIcon, ChevronUpDownIcon, Cog6ToothIcon } from '@heroicons/react/20/solid';
+import { CheckIcon, ChevronUpDownIcon, Cog6ToothIcon, XMarkIcon } from '@heroicons/react/20/solid';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
@@ -15,6 +15,8 @@ import DeleteConfirmModal from './components/DeleteConfirmModal';
 import TagsManagementModal from './components/TagsManagementModal';
 import BalanceChart from './components/BalanceChart';
 import SkeletonRows from './components/SkeletonRows';
+import MonthMultiPicker from './components/MonthMultiPicker';
+import YearMultiPicker from './components/YearMultiPicker';
 import { getTagColorClasses } from './utils/tagColors';
 
 import {
@@ -51,10 +53,10 @@ const App = () => {
   const [selectedTag, setSelectedTag]   = useState('');
   const [filterStart, setFilterStart]   = useState(null);
   const [filterEnd, setFilterEnd]       = useState(null);
-  const [balanceStart, setBalanceStart] = useState(null);
-  const [balanceEnd, setBalanceEnd]     = useState(null);
-  const [balanceView, setBalanceView]         = useState('monthly'); // 'daily' | 'monthly' | 'yearly'
+  const [balanceView, setBalanceView]             = useState('monthly'); // 'daily' | 'monthly' | 'yearly'
   const [balanceFilterType, setBalanceFilterType] = useState('months'); // 'dates' | 'months' | 'years'
+  // dates → Date[], months → "YYYY-MM"[], years → "YYYY"[]
+  const [balanceSelection, setBalanceSelection]   = useState([]);
   const [loading, setLoading]           = useState(true);
 
   // Modals
@@ -240,13 +242,26 @@ const App = () => {
     return localDateStr;                                             // YYYY-MM-DD
   };
 
+  const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const fmtMonthKey = (key) => { const [y, m] = key.split('-'); return `${MONTH_NAMES[+m - 1]} ${y}`; };
+
   const balanceData = Object.values(
     transactions
       .filter((t) => {
-        if (!balanceStart || !balanceEnd) return true;
-        // Compare as local date strings ("YYYY-MM-DD") — no UTC shift
-        const txLocal = toLocalDateStr(new Date(t.date));
-        return txLocal >= balanceStart && txLocal <= balanceEnd;
+        if (balanceSelection.length === 0) return true;
+        const d = new Date(t.date);
+        if (balanceFilterType === 'dates') {
+          const txLocal = toLocalDateStr(d);
+          return balanceSelection.some((sel) => toLocalDateStr(sel) === txLocal);
+        }
+        if (balanceFilterType === 'months') {
+          const txMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+          return balanceSelection.includes(txMonth);
+        }
+        if (balanceFilterType === 'years') {
+          return balanceSelection.includes(String(d.getFullYear()));
+        }
+        return true;
       })
       .reduce((acc, t) => {
         const key = balanceGroupKey(toLocalDateStr(new Date(t.date)));
@@ -415,7 +430,7 @@ const App = () => {
           <div className="bg-white dark:bg-gray-900 rounded-xl p-3 shadow-sm">
             <h2 className="text-base font-bold text-blue-600 dark:text-blue-400 mb-3">Balance</h2>
 
-            {/* View toggle — controls grouping only, does NOT clear range */}
+            {/* View toggle — controls grouping only */}
             <div className="mb-3">
               <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">View</p>
               <div className="flex rounded-xl border border-gray-300 dark:border-gray-600 overflow-hidden text-sm font-medium">
@@ -439,12 +454,22 @@ const App = () => {
               </div>
             </div>
 
-            {/* Filter — filter type toggle + adaptive date range picker */}
+            {/* Filter — multi-select by dates / months / years */}
             <div className="mb-4">
-              <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Filter</p>
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Filter</p>
+                {balanceSelection.length > 0 && (
+                  <button
+                    onClick={() => setBalanceSelection([])}
+                    className="text-xs text-red-400 hover:text-red-500"
+                  >
+                    Clear all
+                  </button>
+                )}
+              </div>
 
               {/* Filter type toggle */}
-              <div className="flex rounded-xl border border-gray-300 dark:border-gray-600 overflow-hidden text-sm font-medium mb-2">
+              <div className="flex rounded-xl border border-gray-300 dark:border-gray-600 overflow-hidden text-sm font-medium mb-3">
                 {[
                   { id: 'dates',  label: 'By Dates'  },
                   { id: 'months', label: 'By Months' },
@@ -452,11 +477,7 @@ const App = () => {
                 ].map(({ id, label }) => (
                   <button
                     key={id}
-                    onClick={() => {
-                      setBalanceFilterType(id);
-                      setBalanceStart(null);
-                      setBalanceEnd(null);
-                    }}
+                    onClick={() => { setBalanceFilterType(id); setBalanceSelection([]); }}
                     className={`flex-1 py-2 transition-colors ${
                       balanceFilterType === id
                         ? 'bg-indigo-500 text-white'
@@ -468,62 +489,68 @@ const App = () => {
                 ))}
               </div>
 
-              {/* Date range picker — adapts to filter type */}
+              {/* By Dates — inline calendar multi-select */}
               {balanceFilterType === 'dates' && (
-                <DatePicker
-                  selectsRange
-                  startDate={parseLocalDate(balanceStart)}
-                  endDate={parseLocalDate(balanceEnd)}
-                  onChange={([start, end]) => {
-                    setBalanceStart(toLocalDateStr(start));
-                    setBalanceEnd(toLocalDateStr(end));
-                  }}
-                  isClearable
-                  withPortal
-                  dateFormat="dd MMM yyyy"
-                  placeholderText="Select date range"
-                  customInput={<BalanceDateBtn />}
-                />
+                <>
+                  <DatePicker
+                    inline
+                    selectsMultiple
+                    selectedDates={balanceSelection}
+                    onChange={(dates) => setBalanceSelection(dates || [])}
+                    shouldCloseOnSelect={false}
+                    dateFormat="dd MMM yyyy"
+                  />
+                  {balanceSelection.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {balanceSelection.map((d) => (
+                        <span key={toLocalDateStr(d)} className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 rounded-full text-xs">
+                          {formatDate(d.toISOString())}
+                          <button onClick={() => setBalanceSelection((prev) => prev.filter((x) => toLocalDateStr(x) !== toLocalDateStr(d)))}>
+                            <XMarkIcon className="w-3 h-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </>
               )}
 
+              {/* By Months — custom inline month grid */}
               {balanceFilterType === 'months' && (
-                <DatePicker
-                  selectsRange
-                  startDate={parseLocalDate(balanceStart)}
-                  endDate={parseLocalDate(balanceEnd)}
-                  onChange={([start, end]) => {
-                    setBalanceStart(start
-                      ? toLocalDateStr(new Date(start.getFullYear(), start.getMonth(), 1))
-                      : null);
-                    setBalanceEnd(end
-                      ? toLocalDateStr(new Date(end.getFullYear(), end.getMonth() + 1, 0))
-                      : null);
-                  }}
-                  showMonthYearPicker
-                  isClearable
-                  withPortal
-                  dateFormat="MMM yyyy"
-                  placeholderText="Select month range"
-                  customInput={<BalanceDateBtn />}
-                />
+                <>
+                  <MonthMultiPicker selected={balanceSelection} onChange={setBalanceSelection} />
+                  {balanceSelection.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {balanceSelection.map((key) => (
+                        <span key={key} className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 rounded-full text-xs">
+                          {fmtMonthKey(key)}
+                          <button onClick={() => setBalanceSelection((prev) => prev.filter((k) => k !== key))}>
+                            <XMarkIcon className="w-3 h-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </>
               )}
 
+              {/* By Years — custom inline year grid */}
               {balanceFilterType === 'years' && (
-                <DatePicker
-                  selectsRange
-                  startDate={parseLocalDate(balanceStart)}
-                  endDate={parseLocalDate(balanceEnd)}
-                  onChange={([start, end]) => {
-                    setBalanceStart(start ? `${start.getFullYear()}-01-01` : null);
-                    setBalanceEnd(end   ? `${end.getFullYear()}-12-31`   : null);
-                  }}
-                  showYearPicker
-                  isClearable
-                  withPortal
-                  dateFormat="yyyy"
-                  placeholderText="Select year range"
-                  customInput={<BalanceDateBtn />}
-                />
+                <>
+                  <YearMultiPicker selected={balanceSelection} onChange={setBalanceSelection} />
+                  {balanceSelection.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {balanceSelection.map((key) => (
+                        <span key={key} className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 rounded-full text-xs">
+                          {key}
+                          <button onClick={() => setBalanceSelection((prev) => prev.filter((k) => k !== key))}>
+                            <XMarkIcon className="w-3 h-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
