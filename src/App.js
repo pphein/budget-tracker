@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, forwardRef, Fragment } from 'react';
 import { Listbox, Transition } from '@headlessui/react';
 import { CheckIcon, ChevronUpDownIcon, Cog6ToothIcon, ArrowDownTrayIcon } from '@heroicons/react/20/solid';
-import { ChevronLeftIcon, ChevronRightIcon, SunIcon, MoonIcon, ArrowDownTrayIcon as DownloadIcon } from '@heroicons/react/24/outline';
+import { ChevronRightIcon, SunIcon, MoonIcon, ArrowDownTrayIcon as DownloadIcon } from '@heroicons/react/24/outline';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import DatePicker from 'react-datepicker';
