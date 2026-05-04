@@ -308,101 +308,93 @@ const App = () => {
         {activeTab !== 'balance' && (
           <>
             {/* Transaction form */}
-            <div className="bg-white dark:bg-gray-900 rounded-xl p-3 mb-3 shadow-sm">
-              <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-end">
+            <div className="bg-white dark:bg-gray-900 rounded-xl px-3 pt-3 pb-2 mb-3 shadow-sm space-y-2">
 
-                {/* Tag selector */}
-                <div className="flex-1 min-w-0">
-                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Tag</label>
-                  <Listbox value={tag} onChange={setTag}>
-                    <div className="relative">
-                      <Listbox.Button className="relative w-full cursor-pointer rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 py-2 pl-3 pr-10 text-left text-sm shadow-sm text-gray-800 dark:text-gray-200">
-                        {tag ? (
-                          (() => {
-                            const found = allTags.find((t) => t.name === tag);
-                            const c = found ? getTagColorClasses(found.colorIndex) : null;
-                            return c ? (
-                              <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${c.bg}`}>
-                                <span className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />
-                                {tag}
-                              </span>
-                            ) : tag;
-                          })()
-                        ) : (
-                          <span className="text-gray-400">Select a tag</span>
-                        )}
-                        <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                          <ChevronUpDownIcon className="h-5 w-5 text-gray-400" />
-                        </span>
-                      </Listbox.Button>
-                      <Transition as={Fragment} leave="transition ease-in duration-100" leaveFrom="opacity-100" leaveTo="opacity-0">
-                        <Listbox.Options className="absolute mt-1 max-h-60 w-full overflow-auto rounded-lg bg-white dark:bg-gray-700 py-1 shadow-lg ring-1 ring-black/10 z-10 text-sm">
-                          {tags.map((t) => {
-                            const c = getTagColorClasses(t.colorIndex);
-                            return (
-                              <Listbox.Option
-                                key={t.id}
-                                value={t.name}
-                                className={({ active }) =>
-                                  `relative cursor-pointer select-none py-2 pl-10 pr-4 ${
-                                    active ? 'bg-blue-100 dark:bg-blue-800 text-blue-900 dark:text-blue-100' : 'text-gray-900 dark:text-white'
-                                  }`
-                                }
-                              >
-                                {({ selected }) => (
-                                  <>
-                                    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${c.bg}`}>
-                                      <span className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />
-                                      {t.name}
-                                    </span>
-                                    {selected && (
-                                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-blue-600">
-                                        <CheckIcon className="h-4 w-4" />
-                                      </span>
-                                    )}
-                                  </>
+              {/* Row 1: Tag (full width) */}
+              <Listbox value={tag} onChange={setTag}>
+                <div className="relative">
+                  <Listbox.Button className="relative w-full cursor-pointer rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 py-2.5 pl-3 pr-10 text-left text-sm text-gray-800 dark:text-gray-200">
+                    {tag ? (
+                      (() => {
+                        const found = allTags.find((t) => t.name === tag);
+                        const c = found ? getTagColorClasses(found.colorIndex) : null;
+                        return c ? (
+                          <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${c.bg}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />
+                            {tag}
+                          </span>
+                        ) : tag;
+                      })()
+                    ) : (
+                      <span className="text-gray-400">Select a tag…</span>
+                    )}
+                    <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                      <ChevronUpDownIcon className="h-5 w-5 text-gray-400" />
+                    </span>
+                  </Listbox.Button>
+                  <Transition as={Fragment} leave="transition ease-in duration-100" leaveFrom="opacity-100" leaveTo="opacity-0">
+                    <Listbox.Options className="absolute mt-1 max-h-60 w-full overflow-auto rounded-lg bg-white dark:bg-gray-700 py-1 shadow-lg ring-1 ring-black/10 z-10 text-sm">
+                      {tags.map((t) => {
+                        const c = getTagColorClasses(t.colorIndex);
+                        return (
+                          <Listbox.Option
+                            key={t.id}
+                            value={t.name}
+                            className={({ active }) =>
+                              `relative cursor-pointer select-none py-2 pl-10 pr-4 ${
+                                active ? 'bg-blue-100 dark:bg-blue-800 text-blue-900 dark:text-blue-100' : 'text-gray-900 dark:text-white'
+                              }`
+                            }
+                          >
+                            {({ selected }) => (
+                              <>
+                                <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${c.bg}`}>
+                                  <span className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />
+                                  {t.name}
+                                </span>
+                                {selected && (
+                                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-blue-600">
+                                    <CheckIcon className="h-4 w-4" />
+                                  </span>
                                 )}
-                              </Listbox.Option>
-                            );
-                          })}
-                        </Listbox.Options>
-                      </Transition>
-                    </div>
-                  </Listbox>
+                              </>
+                            )}
+                          </Listbox.Option>
+                        );
+                      })}
+                    </Listbox.Options>
+                  </Transition>
                 </div>
+              </Listbox>
 
-                {/* Date picker */}
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Date</label>
-                  <DatePicker
-                    selected={date}
-                    onChange={setDate}
-                    dateFormat="dd-MM-yyyy"
-                    withPortal
-                    customInput={
-                      <DateBtn className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 w-full" />
-                    }
-                  />
-                </div>
+              {/* Row 2: Date | Amount | Save */}
+              <div className="flex gap-2 items-center">
+                {/* Date */}
+                <DatePicker
+                  selected={date}
+                  onChange={setDate}
+                  dateFormat="dd MMM"
+                  withPortal
+                  customInput={
+                    <DateBtn className="px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 whitespace-nowrap" />
+                  }
+                />
 
                 {/* Amount */}
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Amount</label>
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    placeholder="0"
-                    className="w-full sm:w-32 p-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
-                  />
-                </div>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="Amount"
+                  className="flex-1 min-w-0 py-2.5 px-3 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 placeholder-gray-400"
+                />
 
-                {/* Save button */}
+                {/* Save */}
                 <button
                   onClick={handleAddTransaction}
-                  className={`px-4 py-2 rounded-lg text-white font-medium text-sm ${
-                    activeTab === 'income' ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'
+                  className={`px-4 py-2.5 rounded-lg text-white font-semibold text-sm flex-shrink-0 ${
+                    activeTab === 'income' ? 'bg-green-500 active:bg-green-600' : 'bg-red-500 active:bg-red-600'
                   }`}
                 >
                   Save
