@@ -53,7 +53,8 @@ const App = () => {
   const [filterEnd, setFilterEnd]       = useState(null);
   const [balanceStart, setBalanceStart] = useState(null);
   const [balanceEnd, setBalanceEnd]     = useState(null);
-  const [balanceView, setBalanceView]   = useState('monthly'); // 'daily' | 'monthly' | 'yearly'
+  const [balanceView, setBalanceView]         = useState('monthly'); // 'daily' | 'monthly' | 'yearly'
+  const [balanceFilterType, setBalanceFilterType] = useState('months'); // 'dates' | 'months' | 'years'
   const [loading, setLoading]           = useState(true);
 
   // Modals
@@ -414,34 +415,61 @@ const App = () => {
           <div className="bg-white dark:bg-gray-900 rounded-xl p-3 shadow-sm">
             <h2 className="text-base font-bold text-blue-600 dark:text-blue-400 mb-3">Balance</h2>
 
-            {/* View toggle — switching mode clears the range */}
-            <div className="flex rounded-xl border border-gray-300 dark:border-gray-600 overflow-hidden text-sm font-medium mb-3">
-              {[
-                { id: 'daily',   label: 'Daily'   },
-                { id: 'monthly', label: 'Monthly' },
-                { id: 'yearly',  label: 'Yearly'  },
-              ].map(({ id, label }) => (
-                <button
-                  key={id}
-                  onClick={() => {
-                    setBalanceView(id);
-                    setBalanceStart(null);
-                    setBalanceEnd(null);
-                  }}
-                  className={`flex-1 py-2.5 transition-colors ${
-                    balanceView === id
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 active:bg-gray-100 dark:active:bg-gray-600'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
+            {/* View toggle — controls grouping only, does NOT clear range */}
+            <div className="mb-3">
+              <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">View</p>
+              <div className="flex rounded-xl border border-gray-300 dark:border-gray-600 overflow-hidden text-sm font-medium">
+                {[
+                  { id: 'daily',   label: 'Daily'   },
+                  { id: 'monthly', label: 'Monthly' },
+                  { id: 'yearly',  label: 'Yearly'  },
+                ].map(({ id, label }) => (
+                  <button
+                    key={id}
+                    onClick={() => setBalanceView(id)}
+                    className={`flex-1 py-2.5 transition-colors ${
+                      balanceView === id
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 active:bg-gray-100 dark:active:bg-gray-600'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            {/* Adaptive date range picker */}
+            {/* Filter — filter type toggle + adaptive date range picker */}
             <div className="mb-4">
-              {balanceView === 'daily' && (
+              <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Filter</p>
+
+              {/* Filter type toggle */}
+              <div className="flex rounded-xl border border-gray-300 dark:border-gray-600 overflow-hidden text-sm font-medium mb-2">
+                {[
+                  { id: 'dates',  label: 'By Dates'  },
+                  { id: 'months', label: 'By Months' },
+                  { id: 'years',  label: 'By Years'  },
+                ].map(({ id, label }) => (
+                  <button
+                    key={id}
+                    onClick={() => {
+                      setBalanceFilterType(id);
+                      setBalanceStart(null);
+                      setBalanceEnd(null);
+                    }}
+                    className={`flex-1 py-2 transition-colors ${
+                      balanceFilterType === id
+                        ? 'bg-indigo-500 text-white'
+                        : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 active:bg-gray-100 dark:active:bg-gray-600'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Date range picker — adapts to filter type */}
+              {balanceFilterType === 'dates' && (
                 <DatePicker
                   selectsRange
                   startDate={parseLocalDate(balanceStart)}
@@ -458,13 +486,12 @@ const App = () => {
                 />
               )}
 
-              {balanceView === 'monthly' && (
+              {balanceFilterType === 'months' && (
                 <DatePicker
                   selectsRange
                   startDate={parseLocalDate(balanceStart)}
                   endDate={parseLocalDate(balanceEnd)}
                   onChange={([start, end]) => {
-                    // Snap to first day of start month, last day of end month
                     setBalanceStart(start
                       ? toLocalDateStr(new Date(start.getFullYear(), start.getMonth(), 1))
                       : null);
@@ -481,13 +508,12 @@ const App = () => {
                 />
               )}
 
-              {balanceView === 'yearly' && (
+              {balanceFilterType === 'years' && (
                 <DatePicker
                   selectsRange
                   startDate={parseLocalDate(balanceStart)}
                   endDate={parseLocalDate(balanceEnd)}
                   onChange={([start, end]) => {
-                    // Snap to Jan 1 of start year, Dec 31 of end year
                     setBalanceStart(start ? `${start.getFullYear()}-01-01` : null);
                     setBalanceEnd(end   ? `${end.getFullYear()}-12-31`   : null);
                   }}
