@@ -1,30 +1,9 @@
-import React, { useState, forwardRef, Fragment } from 'react';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
+import React, { Fragment } from 'react';
 import { Listbox, Transition } from '@headlessui/react';
 import { CheckIcon, ChevronUpDownIcon } from '@heroicons/react/20/solid';
 import { getTagColorClasses } from '../utils/tagColors';
 
-const RangeInput = forwardRef(({ value, onClick }, ref) => (
-  <button
-    onClick={onClick}
-    ref={ref}
-    className="w-full text-left p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm text-gray-800 dark:text-gray-200"
-  >
-    {value || 'All dates'}
-  </button>
-));
-
-const Filter = ({ tags, allTags, selectedTag, setSelectedTag, setStartDate, setEndDate }) => {
-  const [dateRange, setDateRange] = useState([null, null]);
-  const [startDate, endDate] = dateRange;
-
-  const handleRangeChange = (update) => {
-    setDateRange(update);
-    setStartDate(update[0] ? update[0].toISOString().slice(0, 10) : null);
-    setEndDate(update[1] ? update[1].toISOString() : null);
-  };
-
+const Filter = ({ tags, allTags, selectedTag, setSelectedTag }) => {
   const getColor = (tagName) => {
     if (!allTags) return null;
     const found = allTags.find((t) => t.name === tagName);
@@ -32,9 +11,9 @@ const Filter = ({ tags, allTags, selectedTag, setSelectedTag, setStartDate, setE
   };
 
   return (
-    <div className="flex flex-wrap gap-3 mb-3">
+    <div className="mb-3">
       {/* Tag filter */}
-      <div className="w-44">
+      <div>
         <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Tag</label>
         <Listbox value={selectedTag} onChange={setSelectedTag}>
           <div className="relative">
@@ -99,21 +78,6 @@ const Filter = ({ tags, allTags, selectedTag, setSelectedTag, setStartDate, setE
             </Transition>
           </div>
         </Listbox>
-      </div>
-
-      {/* Date range */}
-      <div>
-        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Date Range</label>
-        <DatePicker
-          selectsRange
-          startDate={startDate}
-          endDate={endDate}
-          onChange={handleRangeChange}
-          isClearable
-          withPortal
-          dateFormat="dd-MM-yyyy"
-          customInput={<RangeInput />}
-        />
       </div>
     </div>
   );

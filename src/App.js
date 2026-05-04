@@ -42,8 +42,6 @@ const App = () => {
   const [amount, setAmount]             = useState('');
   const [date, setDate]                 = useState(new Date());
   const [selectedTag, setSelectedTag]   = useState('');
-  const [filterStart, setFilterStart]   = useState(null);
-  const [filterEnd, setFilterEnd]       = useState(null);
   const [balanceView, setBalanceView]           = useState('monthly'); // 'daily' | 'monthly' | 'yearly'
   // daily → Date[], monthly → "YYYY-MM"[], yearly → "YYYY"[]
   const [balanceSelection, setBalanceSelection] = useState([]);
@@ -213,8 +211,18 @@ const App = () => {
   const filteredRecords = transactions.filter((r) => {
     if (r.type !== activeTab) return false;
     if (selectedTag && r.tag !== selectedTag) return false;
-    if (filterStart && new Date(r.date) < new Date(filterStart)) return false;
-    if (filterEnd   && new Date(r.date) > new Date(filterEnd))   return false;
+    if (balanceSelection.length > 0) {
+      const d = new Date(r.date);
+      if (balanceView === 'daily') {
+        const txLocal = toLocalDateStr(d);
+        if (!balanceSelection.some((sel) => toLocalDateStr(sel) === txLocal)) return false;
+      } else if (balanceView === 'monthly') {
+        const txMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        if (!balanceSelection.includes(txMonth)) return false;
+      } else if (balanceView === 'yearly') {
+        if (!balanceSelection.includes(String(d.getFullYear()))) return false;
+      }
+    }
     return true;
   });
 
@@ -284,6 +292,82 @@ const App = () => {
       <SummaryCards transactions={transactions} activeTab={activeTab} onTabChange={handleTabChange} />
 
       <main className="px-2 sm:px-4 max-w-6xl mx-auto">
+
+        {/* ── Global date filter — all tabs ── */}
+        <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden mb-3 bg-white dark:bg-gray-900 shadow-sm">
+          {/* Tab header — Daily / Monthly / Yearly */}
+          <div className="flex border-b border-gray-200 dark:border-gray-700">
+            {[
+              { id: 'daily',   label: 'Daily'   },
+              { id: 'monthly', label: 'Monthly' },
+              { id: 'yearly',  label: 'Yearly'  },
+            ].map(({ id, label }) => (
+              <button
+                key={id}
+                onClick={() => { setBalanceView(id); setBalanceSelection([]); }}
+                className={`flex-1 py-2.5 text-sm font-medium transition-colors border-b-2 ${
+                  balanceView === id
+                    ? 'border-blue-500 text-blue-500 bg-white dark:bg-gray-900'
+                    : 'border-transparent text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 active:bg-gray-100'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {/* Picker body */}
+          <div className="p-3 bg-white dark:bg-gray-900">
+            {balanceView === 'daily' && (
+              <DatePicker
+                inline
+                selectsMultiple
+                selectedDates={balanceSelection}
+                onChange={(dates) => setBalanceSelection(dates || [])}
+                shouldCloseOnSelect={false}
+                dateFormat="dd MMM yyyy"
+              />
+            )}
+            {balanceView === 'monthly' && (
+              <MonthMultiPicker selected={balanceSelection} onChange={setBalanceSelection} />
+            )}
+            {balanceView === 'yearly' && (
+              <YearMultiPicker selected={balanceSelection} onChange={setBalanceSelection} />
+            )}
+
+            {/* Selected chips */}
+            {balanceSelection.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+                {balanceSelection.map((item) => {
+                  const label = balanceView === 'daily'
+                    ? formatDate(item.toISOString())
+                    : balanceView === 'monthly' ? fmtMonthKey(item) : item;
+                  const key = balanceView === 'daily' ? toLocalDateStr(item) : item;
+                  return (
+                    <span key={key} className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium">
+                      {label}
+                      <button
+                        onClick={() => setBalanceSelection((prev) =>
+                          balanceView === 'daily'
+                            ? prev.filter((x) => toLocalDateStr(x) !== key)
+                            : prev.filter((k) => k !== key)
+                        )}
+                      >
+                        <XMarkIcon className="w-3 h-3" />
+                      </button>
+                    </span>
+                  );
+                })}
+                <button
+                  onClick={() => setBalanceSelection([])}
+                  className="text-xs text-red-400 hover:text-red-500 ml-1"
+                >
+                  Clear all
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* ── Income / Expense tab ── */}
         {activeTab !== 'balance' && (
@@ -390,8 +474,6 @@ const App = () => {
                 allTags={allTags}
                 selectedTag={selectedTag}
                 setSelectedTag={setSelectedTag}
-                setStartDate={setFilterStart}
-                setEndDate={setFilterEnd}
               />
               {loading ? (
                 <SkeletonRows count={4} />
@@ -413,83 +495,6 @@ const App = () => {
         {activeTab === 'balance' && (
           <div className="bg-white dark:bg-gray-900 rounded-xl p-3 shadow-sm">
             <h2 className="text-base font-bold text-blue-600 dark:text-blue-400 mb-3">Balance</h2>
-
-            {/* Unified view + filter card */}
-            <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden mb-4">
-
-              {/* Tab header — Daily / Monthly / Yearly */}
-              <div className="flex border-b border-gray-200 dark:border-gray-700">
-                {[
-                  { id: 'daily',   label: 'Daily'   },
-                  { id: 'monthly', label: 'Monthly' },
-                  { id: 'yearly',  label: 'Yearly'  },
-                ].map(({ id, label }) => (
-                  <button
-                    key={id}
-                    onClick={() => { setBalanceView(id); setBalanceSelection([]); }}
-                    className={`flex-1 py-2.5 text-sm font-medium transition-colors border-b-2 ${
-                      balanceView === id
-                        ? 'border-blue-500 text-blue-500 bg-white dark:bg-gray-900'
-                        : 'border-transparent text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 active:bg-gray-100'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-
-              {/* Picker body */}
-              <div className="p-3 bg-white dark:bg-gray-900">
-                {balanceView === 'daily' && (
-                  <DatePicker
-                    inline
-                    selectsMultiple
-                    selectedDates={balanceSelection}
-                    onChange={(dates) => setBalanceSelection(dates || [])}
-                    shouldCloseOnSelect={false}
-                    dateFormat="dd MMM yyyy"
-                  />
-                )}
-                {balanceView === 'monthly' && (
-                  <MonthMultiPicker selected={balanceSelection} onChange={setBalanceSelection} />
-                )}
-                {balanceView === 'yearly' && (
-                  <YearMultiPicker selected={balanceSelection} onChange={setBalanceSelection} />
-                )}
-
-                {/* Selected chips */}
-                {balanceSelection.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
-                    {balanceSelection.map((item) => {
-                      const label = balanceView === 'daily'
-                        ? formatDate(item.toISOString())
-                        : balanceView === 'monthly' ? fmtMonthKey(item) : item;
-                      const key = balanceView === 'daily' ? toLocalDateStr(item) : item;
-                      return (
-                        <span key={key} className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium">
-                          {label}
-                          <button
-                            onClick={() => setBalanceSelection((prev) =>
-                              balanceView === 'daily'
-                                ? prev.filter((x) => toLocalDateStr(x) !== key)
-                                : prev.filter((k) => k !== key)
-                            )}
-                          >
-                            <XMarkIcon className="w-3 h-3" />
-                          </button>
-                        </span>
-                      );
-                    })}
-                    <button
-                      onClick={() => setBalanceSelection([])}
-                      className="text-xs text-red-400 hover:text-red-500 ml-1"
-                    >
-                      Clear all
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
 
             {/* Chart */}
             <BalanceChart data={balanceData} view={balanceView} />
