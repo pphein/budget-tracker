@@ -7,8 +7,8 @@ import { getTagColorClasses } from '../utils/tagColors';
 const SortIcon = ({ column, sortKey, sortDir }) => {
   if (sortKey !== column) return <ChevronUpIcon className="w-3 h-3 inline ml-1 opacity-30" />;
   return sortDir === 'asc'
-    ? <ChevronUpIcon className="w-3 h-3 inline ml-1 text-blue-500" />
-    : <ChevronDownIcon className="w-3 h-3 inline ml-1 text-blue-500" />;
+    ? <ChevronUpIcon className="w-3 h-3 inline ml-1 text-[var(--primary-500)]" />
+    : <ChevronDownIcon className="w-3 h-3 inline ml-1 text-[var(--primary-500)]" />;
 };
 
 const fmt = (n) => new Intl.NumberFormat().format(n);
@@ -120,7 +120,7 @@ const RecordList = ({ type, records, allTags, handleDeleteTransaction, handleEdi
                 <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
                   <div className="flex gap-1 justify-center">
                     <button
-                      className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-xs"
+                      className="bg-[var(--primary-500)] hover:bg-[var(--primary-600)] text-white px-2 py-1 rounded text-xs"
                       onClick={() => handleEditTransaction(record)}
                     >
                       Edit

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, forwardRef } from 'react';
 import { Cog6ToothIcon, ArrowDownTrayIcon } from '@heroicons/react/20/solid';
-import { ChevronRightIcon, SunIcon, MoonIcon, ArrowDownTrayIcon as DownloadIcon } from '@heroicons/react/24/outline';
+import { ChevronRightIcon } from '@heroicons/react/24/outline';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import DatePicker from 'react-datepicker';
@@ -15,6 +15,7 @@ import Toast from './components/Toast';
 import EditTransactionModal from './components/EditTransactionModal';
 import DeleteConfirmModal from './components/DeleteConfirmModal';
 import TagsManagementModal from './components/TagsManagementModal';
+import SettingsModal from './components/SettingsModal';
 import BalanceChart from './components/BalanceChart';
 import SkeletonRows from './components/SkeletonRows';
 import TagSelect from './components/TagSelect';
@@ -37,7 +38,7 @@ const applyTheme = (theme) => {
   document.documentElement.classList.toggle('dark', theme === 'dark');
 };
 
-// ─── Custom datepicker inputs — defined outside App to keep stable references ─
+// ─── Custom datepicker input — defined outside App to keep stable reference ──
 const DateBtn = forwardRef(({ value, onClick, className }, ref) => (
   <button className={className} onClick={onClick} ref={ref}>{value}</button>
 ));
@@ -46,16 +47,16 @@ const DateBtn = forwardRef(({ value, onClick, className }, ref) => (
 const App = () => {
   const [activeTab, setActiveTab]       = useState('income');
   const [transactions, setTransactions] = useState([]);
-  const [allTags, setAllTags]           = useState([]);   // every tag regardless of type
-  const [tags, setTags]                 = useState([]);   // tags for active type
+  const [allTags, setAllTags]           = useState([]);
+  const [tags, setTags]                 = useState([]);
   const [tag, setTag]                   = useState('');
   const [amount, setAmount]             = useState('');
   const [date, setDate]                 = useState(new Date());
   const [selectedTags, setSelectedTags] = useState([]);
-  const [filterYears, setFilterYears]   = useState([new Date().getFullYear()]); // [] = all years
-  const [filterMonths, setFilterMonths] = useState([new Date().getMonth() + 1]); // [] = all months
+  const [filterYears, setFilterYears]   = useState([new Date().getFullYear()]);
+  const [filterMonths, setFilterMonths] = useState([new Date().getMonth() + 1]);
   const [filterOpen, setFilterOpen]     = useState(false);
-  const [balanceView, setBalanceView]   = useState('monthly'); // 'daily'|'monthly'|'yearly'
+  const [balanceView, setBalanceView]   = useState('monthly');
   const [loading, setLoading]           = useState(true);
   const [theme, setTheme]               = useState(getInitialTheme);
   const [colorTheme, setColorTheme]     = useState(getInitialColorTheme);
@@ -67,6 +68,7 @@ const App = () => {
   const [deletingTx, setDeletingTx]             = useState(null);
   const [isDeleteOpen, setIsDeleteOpen]         = useState(false);
   const [isTagsOpen, setIsTagsOpen]             = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen]     = useState(false);
   const [infoMessage, setInfoMessage]           = useState('');
   const [isInfoOpen, setIsInfoOpen]             = useState(false);
   const [toast, setToast]                       = useState(null);
@@ -127,7 +129,8 @@ const App = () => {
     const mSuffix = filterMonths.length === 0 ? 'all' : filterMonths.map((m) => String(m).padStart(2,'0')).join('-');
     saveAs(new Blob([buf], { type: 'application/octet-stream' }), `balance-${ySuffix}-${mSuffix}.xlsx`);
   };
-  const showInfo  = (message) => { setInfoMessage(message); setIsInfoOpen(true); };
+
+  const showInfo = (message) => { setInfoMessage(message); setIsInfoOpen(true); };
 
   const formatDate = (isoString) => {
     if (!isoString) return '';
@@ -136,7 +139,6 @@ const App = () => {
     });
   };
 
-  // Convert a local Date → "YYYY-MM-DD" without UTC shift
   const toLocalDateStr = (d) => {
     if (!d) return null;
     const y = d.getFullYear();
@@ -144,7 +146,6 @@ const App = () => {
     const day = String(d.getDate()).padStart(2, '0');
     return `${y}-${m}-${day}`;
   };
-
 
   // ─── Data loading ─────────────────────────────────────────────────────────
   const loadAll = async () => {
@@ -324,32 +325,13 @@ const App = () => {
       {/* Header */}
       <header className="sticky top-0 z-30 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-between">
         <h1 className="text-lg font-bold text-gray-800 dark:text-white">Budget Tracker</h1>
-        <div className="flex items-center gap-1">
-          {installPrompt && (
-            <button
-              onClick={handleInstall}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-500 text-white text-xs font-medium"
-              aria-label="Install app"
-            >
-              <DownloadIcon className="w-4 h-4" />
-              Install
-            </button>
-          )}
-          <button
-            onClick={toggleTheme}
-            className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-            aria-label="Toggle theme"
-          >
-            {theme === 'dark' ? <SunIcon className="w-5 h-5" /> : <MoonIcon className="w-5 h-5" />}
-          </button>
-          <button
-            onClick={() => setIsTagsOpen(true)}
-            className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-            aria-label="Manage tags"
-          >
-            <Cog6ToothIcon className="w-5 h-5" />
-          </button>
-        </div>
+        <button
+          onClick={() => setIsSettingsOpen(true)}
+          className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+          aria-label="Settings"
+        >
+          <Cog6ToothIcon className="w-5 h-5" />
+        </button>
       </header>
 
       {/* ── Global year + month filter ── */}
@@ -390,7 +372,7 @@ const App = () => {
                       onClick={() => toggleYear(y)}
                       className={`py-2 rounded-lg text-xs font-medium transition-colors ${
                         filterYears.includes(y)
-                          ? 'bg-blue-500 text-white'
+                          ? 'bg-[var(--primary-500)] text-white'
                           : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 active:bg-gray-200 dark:active:bg-gray-600'
                       }`}
                     >
@@ -415,7 +397,7 @@ const App = () => {
                       onClick={() => toggleMonth(i + 1)}
                       className={`py-2 rounded-lg text-xs font-medium transition-colors ${
                         filterMonths.includes(i + 1)
-                          ? 'bg-blue-500 text-white'
+                          ? 'bg-[var(--primary-500)] text-white'
                           : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 active:bg-gray-200 dark:active:bg-gray-600'
                       }`}
                     >
@@ -506,7 +488,7 @@ const App = () => {
         {activeTab === 'balance' && (
           <div className="bg-white dark:bg-gray-900 rounded-xl p-3 shadow-sm">
             <div className="flex items-center justify-between mb-2">
-              <h2 className="text-base font-bold text-blue-600 dark:text-blue-400">Balance</h2>
+              <h2 className="text-base font-bold text-[var(--primary-600)] dark:text-[var(--primary-400)]">Balance</h2>
               {balanceData.length > 0 && (
                 <button
                   onClick={exportBalance}
@@ -526,7 +508,7 @@ const App = () => {
                   onClick={() => setBalanceView(v)}
                   className={`flex-1 py-2 text-xs font-medium transition-colors ${
                     balanceView === v
-                      ? 'bg-blue-500 text-white'
+                      ? 'bg-[var(--primary-500)] text-white'
                       : 'bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
                   }`}
                 >
@@ -568,7 +550,7 @@ const App = () => {
                           </td>
                           <td className="border border-gray-300 dark:border-gray-600 p-2 text-right text-green-600 dark:text-green-400">{new Intl.NumberFormat().format(row.income)}</td>
                           <td className="border border-gray-300 dark:border-gray-600 p-2 text-right text-red-600 dark:text-red-400">{new Intl.NumberFormat().format(row.expense)}</td>
-                          <td className={`border border-gray-300 dark:border-gray-600 p-2 text-right font-bold ${net >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'}`}>
+                          <td className={`border border-gray-300 dark:border-gray-600 p-2 text-right font-bold ${net >= 0 ? 'text-[var(--primary-600)] dark:text-[var(--primary-400)]' : 'text-red-600 dark:text-red-400'}`}>
                             {new Intl.NumberFormat().format(net)}
                           </td>
                         </tr>
@@ -580,7 +562,7 @@ const App = () => {
                       <td className="border border-gray-300 dark:border-gray-600 p-2">Total</td>
                       <td className="border border-gray-300 dark:border-gray-600 p-2 text-right text-green-600 dark:text-green-400">{new Intl.NumberFormat().format(balanceTotals.income)}</td>
                       <td className="border border-gray-300 dark:border-gray-600 p-2 text-right text-red-600 dark:text-red-400">{new Intl.NumberFormat().format(balanceTotals.expense)}</td>
-                      <td className={`border border-gray-300 dark:border-gray-600 p-2 text-right ${(balanceTotals.income - balanceTotals.expense) >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'}`}>
+                      <td className={`border border-gray-300 dark:border-gray-600 p-2 text-right ${(balanceTotals.income - balanceTotals.expense) >= 0 ? 'text-[var(--primary-600)] dark:text-[var(--primary-400)]' : 'text-red-600 dark:text-red-400'}`}>
                         {new Intl.NumberFormat().format(balanceTotals.income - balanceTotals.expense)}
                       </td>
                     </tr>
@@ -596,6 +578,29 @@ const App = () => {
       <BottomNav activeTab={activeTab} onChange={handleTabChange} />
 
       {/* Modals */}
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+        colorTheme={colorTheme}
+        onColorThemeChange={handleColorThemeChange}
+        onManageTags={() => setIsTagsOpen(true)}
+        installPrompt={installPrompt}
+        onInstall={handleInstall}
+      />
+
+      <TagsManagementModal
+        isOpen={isTagsOpen}
+        onClose={() => setIsTagsOpen(false)}
+        allTags={allTags}
+        onAdd={handleAddTag}
+        onDelete={handleDeleteTag}
+        onEdit={handleEditTag}
+        onSync={handleSyncTags}
+        activeType={activeTab !== 'balance' ? activeTab : 'income'}
+      />
+
       <EditTransactionModal
         isOpen={isEditOpen}
         onClose={() => setIsEditOpen(false)}
@@ -609,19 +614,6 @@ const App = () => {
         onClose={() => setIsDeleteOpen(false)}
         onConfirm={confirmDelete}
         transaction={deletingTx}
-      />
-
-      <TagsManagementModal
-        isOpen={isTagsOpen}
-        onClose={() => setIsTagsOpen(false)}
-        allTags={allTags}
-        onAdd={handleAddTag}
-        onDelete={handleDeleteTag}
-        onEdit={handleEditTag}
-        onSync={handleSyncTags}
-        activeType={activeTab !== 'balance' ? activeTab : 'income'}
-        colorTheme={colorTheme}
-        onColorThemeChange={handleColorThemeChange}
       />
 
       <InfoModal

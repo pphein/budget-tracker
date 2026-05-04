@@ -81,11 +81,11 @@ const Filter = ({ tags, allTags, selectedTags, setSelectedTags }) => {
             type="button"
             onClick={() => setSelectedTags([])}
             className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 ${
-              selectedTags.length === 0 ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+              selectedTags.length === 0 ? 'bg-primary-tint-subtle' : ''
             }`}
           >
             {selectedTags.length === 0
-              ? <CheckIcon className="w-4 h-4 text-blue-500 flex-shrink-0" />
+              ? <CheckIcon className="w-4 h-4 text-[var(--primary-500)] flex-shrink-0" />
               : <span className="w-4 flex-shrink-0" />}
             <span className="text-gray-700 dark:text-gray-200 text-xs font-medium">All Tags</span>
           </button>
@@ -103,10 +103,10 @@ const Filter = ({ tags, allTags, selectedTags, setSelectedTags }) => {
                     key={t.id}
                     type="button"
                     onClick={() => toggle(t.name)}
-                    className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 ${sel ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
+                    className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 ${sel ? 'bg-primary-tint-subtle' : ''}`}
                   >
                     {sel
-                      ? <CheckIcon className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                      ? <CheckIcon className="w-4 h-4 text-[var(--primary-500)] flex-shrink-0" />
                       : <span className="w-4 flex-shrink-0" />}
                     <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${c.bg}`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />

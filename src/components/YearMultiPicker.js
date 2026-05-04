@@ -27,7 +27,7 @@ const YearMultiPicker = ({ selected, onChange }) => {
               onClick={() => toggle(year)}
               className={`py-2 rounded-lg text-xs font-medium transition-colors ${
                 sel
-                  ? 'bg-blue-500 text-white'
+                  ? 'bg-[var(--primary-500)] text-white'
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 active:bg-gray-200 dark:active:bg-gray-600'
               }`}
             >

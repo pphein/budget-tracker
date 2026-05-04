@@ -31,13 +31,15 @@ const SummaryCards = ({ transactions, activeTab, onTabChange }) => {
 
       <button
         onClick={() => onTabChange('balance')}
-        className={`rounded-xl p-3 text-center transition-all ${
-          activeTab === 'balance' ? 'ring-2 ring-blue-400' : ''
-        } bg-blue-50 dark:bg-blue-900/30`}
+        className={`rounded-xl p-3 text-center transition-all bg-primary-tint ${
+          activeTab === 'balance' ? 'ring-2 ring-[var(--primary-400)]' : ''
+        }`}
       >
-        <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">Net</div>
+        <div className="text-xs text-[var(--primary-600)] dark:text-[var(--primary-400)] font-medium">Net</div>
         <div className={`text-sm font-bold mt-1 truncate ${
-          net >= 0 ? 'text-blue-700 dark:text-blue-300' : 'text-red-700 dark:text-red-300'
+          net >= 0
+            ? 'text-[var(--primary-700)] dark:text-[var(--primary-300)]'
+            : 'text-red-700 dark:text-red-300'
         }`}>
           {net < 0 ? '-' : ''}{fmt(net)}
         </div>

@@ -70,10 +70,10 @@ const TagSelect = ({ tags, value, onChange, placeholder = 'Select a tag…' }) =
                     key={t.id}
                     type="button"
                     onClick={() => { onChange(t.name); setOpen(false); setSearch(''); }}
-                    className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 ${sel ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
+                    className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 ${sel ? 'bg-primary-tint-subtle' : ''}`}
                   >
                     {sel
-                      ? <CheckIcon className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                      ? <CheckIcon className="w-4 h-4 text-[var(--primary-500)] flex-shrink-0" />
                       : <span className="w-4 flex-shrink-0" />}
                     <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${c.bg}`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />

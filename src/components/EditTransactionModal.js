@@ -52,7 +52,7 @@ const EditTransactionModal = ({ isOpen, onClose, onSave, transaction, tags }) =>
                           value={t.name}
                           className={({ active }) =>
                             `relative cursor-pointer select-none py-2 pl-10 pr-4 ${
-                              active ? 'bg-blue-100 dark:bg-blue-800 text-blue-900 dark:text-blue-100' : 'text-gray-900 dark:text-white'
+                              active ? 'bg-primary-tint-subtle text-gray-900 dark:text-white' : 'text-gray-900 dark:text-white'
                             }`
                           }
                         >
@@ -60,7 +60,7 @@ const EditTransactionModal = ({ isOpen, onClose, onSave, transaction, tags }) =>
                             <>
                               <span className={`block truncate ${selected ? 'font-medium' : 'font-normal'}`}>{t.name}</span>
                               {selected && (
-                                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-blue-600">
+                                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[var(--primary-600)]">
                                   <CheckIcon className="h-4 w-4" />
                                 </span>
                               )}
@@ -109,7 +109,7 @@ const EditTransactionModal = ({ isOpen, onClose, onSave, transaction, tags }) =>
             </button>
             <button
               onClick={handleSubmit}
-              className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700"
+              className="px-4 py-2 rounded-lg bg-[var(--primary-600)] text-white text-sm font-medium hover:bg-[var(--primary-700)]"
             >
               Save
             </button>

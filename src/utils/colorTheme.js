@@ -9,66 +9,21 @@ export const COLOR_THEMES = [
   { id: 'amber',  label: 'Amber',  colors: { 50:'#fffbeb', 100:'#fef3c7', 200:'#fde68a', 300:'#fcd34d', 400:'#fbbf24', 500:'#f59e0b', 600:'#d97706', 700:'#b45309', 800:'#92400e', 900:'#78350f' } },
 ];
 
-const rgb = (hex) => {
+export const getInitialColorTheme = () => localStorage.getItem('colorTheme') || 'blue';
+
+const toRgb = (hex) => {
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
   return `${r} ${g} ${b}`;
 };
 
-const generateCSS = (t) => `
-  .bg-blue-50  { background-color: ${t[50]}  !important; }
-  .bg-blue-100 { background-color: ${t[100]} !important; }
-  .bg-blue-500 { background-color: ${t[500]} !important; }
-  .bg-blue-600 { background-color: ${t[600]} !important; }
-  .bg-blue-700 { background-color: ${t[700]} !important; }
-  .text-blue-200 { color: ${t[200]} !important; }
-  .text-blue-300 { color: ${t[300]} !important; }
-  .text-blue-400 { color: ${t[400]} !important; }
-  .text-blue-500 { color: ${t[500]} !important; }
-  .text-blue-600 { color: ${t[600]} !important; }
-  .text-blue-700 { color: ${t[700]} !important; }
-  .text-blue-800 { color: ${t[800]} !important; }
-  .border-blue-500 { border-color: ${t[500]} !important; }
-  .border-b-2.border-blue-500 { border-bottom-color: ${t[500]} !important; }
-  .ring-blue-400, .focus\\:ring-blue-400:focus { --tw-ring-color: ${t[400]} !important; }
-  .ring-blue-500 { --tw-ring-color: ${t[500]} !important; }
-  .ring-2.ring-blue-400 { --tw-ring-color: ${t[400]} !important; }
-  .hover\\:bg-blue-600:hover  { background-color: ${t[600]} !important; }
-  .hover\\:bg-blue-700:hover  { background-color: ${t[700]} !important; }
-  .active\\:bg-blue-600:active { background-color: ${t[600]} !important; }
-  .hover\\:bg-blue-100:hover  { background-color: ${t[100]} !important; }
-  .hover\\:text-blue-500:hover { color: ${t[500]} !important; }
-
-  /* dark mode */
-  .dark .dark\\:text-blue-200 { color: ${t[200]} !important; }
-  .dark .dark\\:text-blue-300 { color: ${t[300]} !important; }
-  .dark .dark\\:text-blue-400 { color: ${t[400]} !important; }
-  .dark .dark\\:bg-blue-800   { background-color: ${t[800]} !important; }
-  .dark .dark\\:ring-blue-400 { --tw-ring-color: ${t[400]} !important; }
-  .dark .dark\\:bg-blue-900\\/20 { background-color: rgb(${rgb(t[900])} / 0.2) !important; }
-  .dark .dark\\:bg-blue-900\\/30 { background-color: rgb(${rgb(t[900])} / 0.3) !important; }
-  .dark .dark\\:bg-blue-900\\/40 { background-color: rgb(${rgb(t[900])} / 0.4) !important; }
-  .dark .dark\\:bg-blue-900\\/60 { background-color: rgb(${rgb(t[900])} / 0.6) !important; }
-  .dark .dark\\:hover\\:bg-blue-900\\/50:hover { background-color: rgb(${rgb(t[900])} / 0.5) !important; }
-  .dark .dark\\:border-blue-700 { border-color: ${t[700]} !important; }
-  .dark .dark\\:bg-blue-900 { background-color: ${t[900]} !important; }
-
-  /* Tailwind light mode active/hover with bg-blue-100 */
-  .bg-blue-100.text-blue-900, .text-blue-900 { color: ${t[900]} !important; }
-  .text-blue-100 { color: ${t[100]} !important; }
-`;
-
-export const getInitialColorTheme = () => localStorage.getItem('colorTheme') || 'blue';
-
 export const applyColorTheme = (themeId) => {
   const theme = COLOR_THEMES.find((t) => t.id === themeId) || COLOR_THEMES[0];
-  let style = document.getElementById('color-theme-override');
-  if (!style) {
-    style = document.createElement('style');
-    style.id = 'color-theme-override';
-    document.head.appendChild(style);
-  }
-  style.textContent = generateCSS(theme.colors);
+  const root = document.documentElement;
+  Object.entries(theme.colors).forEach(([shade, hex]) => {
+    root.style.setProperty(`--primary-${shade}`, hex);
+    root.style.setProperty(`--primary-${shade}-rgb`, toRgb(hex));
+  });
   localStorage.setItem('colorTheme', themeId);
 };

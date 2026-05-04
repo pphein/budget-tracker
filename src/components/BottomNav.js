@@ -13,7 +13,7 @@ import {
 const TABS = [
   { id: 'income',  label: 'Income',  Icon: ArrowUpCircleIcon,   ActiveIcon: ArrowUpSolid,   color: 'text-green-500' },
   { id: 'expense', label: 'Expense', Icon: ArrowDownCircleIcon, ActiveIcon: ArrowDownSolid, color: 'text-red-500'   },
-  { id: 'balance', label: 'Balance', Icon: ScaleIcon,           ActiveIcon: ScaleSolid,     color: 'text-blue-500'  },
+  { id: 'balance', label: 'Balance', Icon: ScaleIcon,           ActiveIcon: ScaleSolid,     color: 'text-[var(--primary-500)]' },
 ];
 
 const BottomNav = ({ activeTab, onChange }) => (
