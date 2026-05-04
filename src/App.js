@@ -221,9 +221,19 @@ const App = () => {
     { income: 0, expense: 0 }
   );
 
-  // Custom date picker input
+  // Custom date picker inputs (buttons — prevent keyboard on mobile)
   const DateBtn = forwardRef(({ value, onClick, className }, ref) => (
     <button className={className} onClick={onClick} ref={ref}>{value}</button>
+  ));
+
+  const BalanceDateBtn = forwardRef(({ value, onClick }, ref) => (
+    <button
+      ref={ref}
+      onClick={onClick}
+      className="w-full text-left p-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+    >
+      {value || 'All dates'}
+    </button>
   ));
 
   // ─── Render ───────────────────────────────────────────────────────────────
@@ -403,7 +413,9 @@ const App = () => {
                 isClearable
                 withPortal
                 dateFormat="dd-MM-yyyy"
-                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                customInput={
+                  <BalanceDateBtn />
+                }
               />
             </div>
 
