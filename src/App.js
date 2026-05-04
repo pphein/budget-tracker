@@ -52,9 +52,10 @@ const App = () => {
   const [amount, setAmount]             = useState('');
   const [date, setDate]                 = useState(new Date());
   const [selectedTag, setSelectedTag]   = useState('');
-  const [filterYear, setFilterYear]     = useState(new Date().getFullYear());
+  const [filterYears, setFilterYears]   = useState([new Date().getFullYear()]); // [] = all years
   const [filterMonths, setFilterMonths] = useState([new Date().getMonth() + 1]); // [] = all months
   const [filterOpen, setFilterOpen]     = useState(false);
+  const [balanceView, setBalanceView]   = useState('monthly'); // 'daily'|'monthly'|'yearly'
   const [loading, setLoading]           = useState(true);
   const [theme, setTheme]               = useState(getInitialTheme);
   const [installPrompt, setInstallPrompt] = useState(null);
@@ -111,10 +112,9 @@ const App = () => {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Balance');
     const buf = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-    const suffix = filterMonths.length === 1
-      ? String(filterMonths[0]).padStart(2, '0')
-      : filterMonths.length > 1 ? `${filterMonths.map((m) => String(m).padStart(2,'0')).join('-')}` : 'all';
-    saveAs(new Blob([buf], { type: 'application/octet-stream' }), `balance-${filterYear}-${suffix}.xlsx`);
+    const ySuffix = filterYears.length === 0 ? 'all' : filterYears.join('-');
+    const mSuffix = filterMonths.length === 0 ? 'all' : filterMonths.map((m) => String(m).padStart(2,'0')).join('-');
+    saveAs(new Blob([buf], { type: 'application/octet-stream' }), `balance-${ySuffix}-${mSuffix}.xlsx`);
   };
   const showInfo  = (message) => { setInfoMessage(message); setIsInfoOpen(true); };
 
@@ -262,15 +262,15 @@ const App = () => {
   // ─── Shared year+month filter ──────────────────────────────────────────────
   const matchesFilter = (isoDate) => {
     const d = new Date(isoDate);
-    if (d.getFullYear() !== filterYear) return false;
-    if (filterMonths.length === 0) return true; // all months
-    return filterMonths.includes(d.getMonth() + 1);
+    if (filterYears.length > 0 && !filterYears.includes(d.getFullYear())) return false;
+    if (filterMonths.length > 0 && !filterMonths.includes(d.getMonth() + 1)) return false;
+    return true;
   };
 
-  const toggleMonth = (m) =>
-    setFilterMonths((prev) =>
-      prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m].sort((a, b) => a - b)
-    );
+  const toggleYear  = (y) => setFilterYears((prev) =>
+    prev.includes(y) ? prev.filter((x) => x !== y) : [...prev, y].sort((a, b) => a - b));
+  const toggleMonth = (m) => setFilterMonths((prev) =>
+    prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m].sort((a, b) => a - b));
 
   // ─── Filtered records ─────────────────────────────────────────────────────
   const filteredRecords = transactions.filter((r) => {
@@ -279,12 +279,18 @@ const App = () => {
     return matchesFilter(r.date);
   });
 
-  // ─── Balance data (grouped by day within selected month) ──────────────────
+  // ─── Balance data — grouped by balanceView ────────────────────────────────
+  const balanceGroupKey = (localDateStr) => {
+    if (balanceView === 'yearly')  return localDateStr.slice(0, 4);
+    if (balanceView === 'monthly') return localDateStr.slice(0, 7);
+    return localDateStr;
+  };
+
   const balanceData = Object.values(
     transactions
       .filter((t) => matchesFilter(t.date))
       .reduce((acc, t) => {
-        const key = toLocalDateStr(new Date(t.date));
+        const key = balanceGroupKey(toLocalDateStr(new Date(t.date)));
         if (!acc[key]) acc[key] = { date: key, income: 0, expense: 0 };
         if (t.type === 'income')  acc[key].income  += parseFloat(t.amount || 0);
         if (t.type === 'expense') acc[key].expense += parseFloat(t.amount || 0);
@@ -344,59 +350,69 @@ const App = () => {
             className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-200"
           >
             <span>
-              {filterMonths.length === 0
-                ? `All months ${filterYear}`
-                : filterMonths.length <= 3
-                  ? `${filterMonths.map((m) => MONTH_LABELS[m - 1]).join(', ')} ${filterYear}`
-                  : `${filterMonths.length} months ${filterYear}`}
+              {(() => {
+                const yLabel = filterYears.length === 0 ? 'All years' : filterYears.join(', ');
+                const mLabel = filterMonths.length === 0 ? 'All months'
+                  : filterMonths.length <= 3 ? filterMonths.map((m) => MONTH_LABELS[m - 1]).join(', ')
+                  : `${filterMonths.length} months`;
+                return `${mLabel} · ${yLabel}`;
+              })()}
             </span>
             <ChevronRightIcon className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${filterOpen ? 'rotate-90' : ''}`} />
           </button>
 
           {/* Expanded picker */}
           {filterOpen && (
-            <div className="px-3 pb-3 border-t border-gray-100 dark:border-gray-700 pt-2">
-              {/* Year navigation */}
-              <div className="flex items-center justify-between mb-2">
-                <button
-                  onClick={() => setFilterYear((y) => y - 1)}
-                  className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
-                >
-                  <ChevronLeftIcon className="w-4 h-4" />
-                </button>
-                <span className="text-sm font-bold text-gray-700 dark:text-gray-200">{filterYear}</span>
-                <button
-                  onClick={() => setFilterYear((y) => y + 1)}
-                  className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
-                >
-                  <ChevronRightIcon className="w-4 h-4" />
-                </button>
+            <div className="px-3 pb-3 border-t border-gray-100 dark:border-gray-700 pt-2 space-y-3">
+              {/* Year pills — multi-select */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Year</span>
+                  {filterYears.length > 0 && (
+                    <button onClick={() => setFilterYears([])} className="text-xs text-red-400">Clear</button>
+                  )}
+                </div>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {Array.from({ length: 8 }, (_, i) => new Date().getFullYear() - 6 + i).map((y) => (
+                    <button
+                      key={y}
+                      onClick={() => toggleYear(y)}
+                      className={`py-2 rounded-lg text-xs font-medium transition-colors ${
+                        filterYears.includes(y)
+                          ? 'bg-blue-500 text-white'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 active:bg-gray-200 dark:active:bg-gray-600'
+                      }`}
+                    >
+                      {y}
+                    </button>
+                  ))}
+                </div>
               </div>
+
               {/* Month pills — multi-select */}
-              <div className="grid grid-cols-4 gap-1.5">
-                {MONTH_LABELS.map((label, i) => (
-                  <button
-                    key={label}
-                    onClick={() => toggleMonth(i + 1)}
-                    className={`py-2 rounded-lg text-xs font-medium transition-colors ${
-                      filterMonths.includes(i + 1)
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 active:bg-gray-200 dark:active:bg-gray-600'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Month</span>
+                  {filterMonths.length > 0 && (
+                    <button onClick={() => setFilterMonths([])} className="text-xs text-red-400">Clear</button>
+                  )}
+                </div>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {MONTH_LABELS.map((label, i) => (
+                    <button
+                      key={label}
+                      onClick={() => toggleMonth(i + 1)}
+                      className={`py-2 rounded-lg text-xs font-medium transition-colors ${
+                        filterMonths.includes(i + 1)
+                          ? 'bg-blue-500 text-white'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 active:bg-gray-200 dark:active:bg-gray-600'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
               </div>
-              {/* Clear selection */}
-              {filterMonths.length > 0 && (
-                <button
-                  onClick={() => setFilterMonths([])}
-                  className="mt-2 text-xs text-red-400 hover:text-red-500"
-                >
-                  Clear — show all months
-                </button>
-              )}
             </div>
           )}
         </div>
@@ -532,7 +548,7 @@ const App = () => {
         {/* ── Balance tab ── */}
         {activeTab === 'balance' && (
           <div className="bg-white dark:bg-gray-900 rounded-xl p-3 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-2">
               <h2 className="text-base font-bold text-blue-600 dark:text-blue-400">Balance</h2>
               {balanceData.length > 0 && (
                 <button
@@ -545,8 +561,25 @@ const App = () => {
               )}
             </div>
 
+            {/* View toggle — Daily / Monthly / Yearly */}
+            <div className="flex rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 mb-3">
+              {[['daily','Daily'],['monthly','Monthly'],['yearly','Yearly']].map(([v, label]) => (
+                <button
+                  key={v}
+                  onClick={() => setBalanceView(v)}
+                  className={`flex-1 py-2 text-xs font-medium transition-colors ${
+                    balanceView === v
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
             {/* Chart */}
-            <BalanceChart data={balanceData} view="daily" />
+            <BalanceChart data={balanceData} view={balanceView} />
 
             {/* Table */}
             {loading ? (
@@ -558,7 +591,9 @@ const App = () => {
                 <table className="w-full border-collapse border border-gray-300 dark:border-gray-600 text-sm">
                   <thead>
                     <tr className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200">
-                      <th className="border border-gray-300 dark:border-gray-600 p-2 text-left">Date</th>
+                      <th className="border border-gray-300 dark:border-gray-600 p-2 text-left">
+                        {balanceView === 'yearly' ? 'Year' : balanceView === 'monthly' ? 'Month' : 'Date'}
+                      </th>
                       <th className="border border-gray-300 dark:border-gray-600 p-2 text-right">Income</th>
                       <th className="border border-gray-300 dark:border-gray-600 p-2 text-right">Expense</th>
                       <th className="border border-gray-300 dark:border-gray-600 p-2 text-right">Net</th>
@@ -570,7 +605,9 @@ const App = () => {
                       return (
                         <tr key={row.date} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                           <td className="border border-gray-300 dark:border-gray-600 p-2 text-gray-700 dark:text-gray-300 whitespace-nowrap">
-                            {row.date}
+                            {balanceView === 'monthly'
+                              ? new Date(row.date + '-01').toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+                              : row.date}
                           </td>
                           <td className="border border-gray-300 dark:border-gray-600 p-2 text-right text-green-600 dark:text-green-400">{new Intl.NumberFormat().format(row.income)}</td>
                           <td className="border border-gray-300 dark:border-gray-600 p-2 text-right text-red-600 dark:text-red-400">{new Intl.NumberFormat().format(row.expense)}</td>

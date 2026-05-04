@@ -1,11 +1,12 @@
 {
-  "short_name": "Budget Tracker",
-  "name": "Budget Tracker App",
+  "short_name": "Budget",
+  "name": "Budget Tracker",
   "icons": [
     {
-      "src": "favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     },
     {
       "src": "logo192.png",
@@ -19,7 +20,8 @@
     }
   ],
   "start_url": "/",
-  "background_color": "#ffffff",
+  "background_color": "#1d4ed8",
   "display": "standalone",
-  "theme_color": "#000000"
+  "theme_color": "#1d4ed8",
+  "description": "Track your income, expenses and balance"
 }
