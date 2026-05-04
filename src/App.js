@@ -53,7 +53,7 @@ const App = () => {
   const [date, setDate]                 = useState(new Date());
   const [selectedTag, setSelectedTag]   = useState('');
   const [filterYear, setFilterYear]     = useState(new Date().getFullYear());
-  const [filterMonth, setFilterMonth]   = useState(new Date().getMonth() + 1); // 1-12
+  const [filterMonths, setFilterMonths] = useState([new Date().getMonth() + 1]); // [] = all months
   const [filterOpen, setFilterOpen]     = useState(false);
   const [loading, setLoading]           = useState(true);
   const [theme, setTheme]               = useState(getInitialTheme);
@@ -96,8 +96,10 @@ const App = () => {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Balance');
     const buf = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-    const mm = String(filterMonth).padStart(2, '0');
-    saveAs(new Blob([buf], { type: 'application/octet-stream' }), `balance-${filterYear}-${mm}.xlsx`);
+    const suffix = filterMonths.length === 1
+      ? String(filterMonths[0]).padStart(2, '0')
+      : filterMonths.length > 1 ? `${filterMonths.map((m) => String(m).padStart(2,'0')).join('-')}` : 'all';
+    saveAs(new Blob([buf], { type: 'application/octet-stream' }), `balance-${filterYear}-${suffix}.xlsx`);
   };
   const showInfo  = (message) => { setInfoMessage(message); setIsInfoOpen(true); };
 
@@ -245,8 +247,15 @@ const App = () => {
   // ─── Shared year+month filter ──────────────────────────────────────────────
   const matchesFilter = (isoDate) => {
     const d = new Date(isoDate);
-    return d.getFullYear() === filterYear && d.getMonth() + 1 === filterMonth;
+    if (d.getFullYear() !== filterYear) return false;
+    if (filterMonths.length === 0) return true; // all months
+    return filterMonths.includes(d.getMonth() + 1);
   };
+
+  const toggleMonth = (m) =>
+    setFilterMonths((prev) =>
+      prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m].sort((a, b) => a - b)
+    );
 
   // ─── Filtered records ─────────────────────────────────────────────────────
   const filteredRecords = transactions.filter((r) => {
@@ -309,7 +318,13 @@ const App = () => {
             onClick={() => setFilterOpen((o) => !o)}
             className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-200"
           >
-            <span>{MONTH_LABELS[filterMonth - 1]} {filterYear}</span>
+            <span>
+              {filterMonths.length === 0
+                ? `All months ${filterYear}`
+                : filterMonths.length <= 3
+                  ? `${filterMonths.map((m) => MONTH_LABELS[m - 1]).join(', ')} ${filterYear}`
+                  : `${filterMonths.length} months ${filterYear}`}
+            </span>
             <ChevronRightIcon className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${filterOpen ? 'rotate-90' : ''}`} />
           </button>
 
@@ -332,14 +347,14 @@ const App = () => {
                   <ChevronRightIcon className="w-4 h-4" />
                 </button>
               </div>
-              {/* Month pills */}
+              {/* Month pills — multi-select */}
               <div className="grid grid-cols-4 gap-1.5">
                 {MONTH_LABELS.map((label, i) => (
                   <button
                     key={label}
-                    onClick={() => { setFilterMonth(i + 1); setFilterOpen(false); }}
+                    onClick={() => toggleMonth(i + 1)}
                     className={`py-2 rounded-lg text-xs font-medium transition-colors ${
-                      filterMonth === i + 1
+                      filterMonths.includes(i + 1)
                         ? 'bg-blue-500 text-white'
                         : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 active:bg-gray-200 dark:active:bg-gray-600'
                     }`}
@@ -348,6 +363,15 @@ const App = () => {
                   </button>
                 ))}
               </div>
+              {/* Clear selection */}
+              {filterMonths.length > 0 && (
+                <button
+                  onClick={() => setFilterMonths([])}
+                  className="mt-2 text-xs text-red-400 hover:text-red-500"
+                >
+                  Clear — show all months
+                </button>
+              )}
             </div>
           )}
         </div>
