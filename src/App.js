@@ -54,6 +54,7 @@ const App = () => {
   const [selectedTag, setSelectedTag]   = useState('');
   const [filterYear, setFilterYear]     = useState(new Date().getFullYear());
   const [filterMonth, setFilterMonth]   = useState(new Date().getMonth() + 1); // 1-12
+  const [filterOpen, setFilterOpen]     = useState(false);
   const [loading, setLoading]           = useState(true);
   const [theme, setTheme]               = useState(getInitialTheme);
 
@@ -294,39 +295,53 @@ const App = () => {
 
       {/* ── Global year + month filter ── */}
       <div className="px-2 sm:px-4 max-w-6xl mx-auto mt-3">
-        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm p-3">
-          {/* Year navigation */}
-          <div className="flex items-center justify-between mb-2">
-            <button
-              onClick={() => setFilterYear((y) => y - 1)}
-              className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
-            >
-              <ChevronLeftIcon className="w-4 h-4" />
-            </button>
-            <span className="text-sm font-bold text-gray-700 dark:text-gray-200">{filterYear}</span>
-            <button
-              onClick={() => setFilterYear((y) => y + 1)}
-              className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
-            >
-              <ChevronRightIcon className="w-4 h-4" />
-            </button>
-          </div>
-          {/* Month pills */}
-          <div className="grid grid-cols-4 gap-1.5">
-            {MONTH_LABELS.map((label, i) => (
-              <button
-                key={label}
-                onClick={() => setFilterMonth(i + 1)}
-                className={`py-2 rounded-lg text-xs font-medium transition-colors ${
-                  filterMonth === i + 1
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 active:bg-gray-200 dark:active:bg-gray-600'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm overflow-hidden">
+          {/* Collapsed header — always visible */}
+          <button
+            onClick={() => setFilterOpen((o) => !o)}
+            className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-200"
+          >
+            <span>{MONTH_LABELS[filterMonth - 1]} {filterYear}</span>
+            <ChevronRightIcon className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${filterOpen ? 'rotate-90' : ''}`} />
+          </button>
+
+          {/* Expanded picker */}
+          {filterOpen && (
+            <div className="px-3 pb-3 border-t border-gray-100 dark:border-gray-700 pt-2">
+              {/* Year navigation */}
+              <div className="flex items-center justify-between mb-2">
+                <button
+                  onClick={() => setFilterYear((y) => y - 1)}
+                  className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
+                >
+                  <ChevronLeftIcon className="w-4 h-4" />
+                </button>
+                <span className="text-sm font-bold text-gray-700 dark:text-gray-200">{filterYear}</span>
+                <button
+                  onClick={() => setFilterYear((y) => y + 1)}
+                  className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
+                >
+                  <ChevronRightIcon className="w-4 h-4" />
+                </button>
+              </div>
+              {/* Month pills */}
+              <div className="grid grid-cols-4 gap-1.5">
+                {MONTH_LABELS.map((label, i) => (
+                  <button
+                    key={label}
+                    onClick={() => { setFilterMonth(i + 1); setFilterOpen(false); }}
+                    className={`py-2 rounded-lg text-xs font-medium transition-colors ${
+                      filterMonth === i + 1
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 active:bg-gray-200 dark:active:bg-gray-600'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
