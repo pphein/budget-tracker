@@ -44,10 +44,9 @@ const App = () => {
   const [selectedTag, setSelectedTag]   = useState('');
   const [filterStart, setFilterStart]   = useState(null);
   const [filterEnd, setFilterEnd]       = useState(null);
-  const [balanceView, setBalanceView]             = useState('monthly'); // 'daily' | 'monthly' | 'yearly'
-  const [balanceFilterType, setBalanceFilterType] = useState('months'); // 'dates' | 'months' | 'years'
-  // dates → Date[], months → "YYYY-MM"[], years → "YYYY"[]
-  const [balanceSelection, setBalanceSelection]   = useState([]);
+  const [balanceView, setBalanceView]           = useState('monthly'); // 'daily' | 'monthly' | 'yearly'
+  // daily → Date[], monthly → "YYYY-MM"[], yearly → "YYYY"[]
+  const [balanceSelection, setBalanceSelection] = useState([]);
   const [loading, setLoading]           = useState(true);
 
   // Modals
@@ -235,15 +234,15 @@ const App = () => {
       .filter((t) => {
         if (balanceSelection.length === 0) return true;
         const d = new Date(t.date);
-        if (balanceFilterType === 'dates') {
+        if (balanceView === 'daily') {
           const txLocal = toLocalDateStr(d);
           return balanceSelection.some((sel) => toLocalDateStr(sel) === txLocal);
         }
-        if (balanceFilterType === 'months') {
+        if (balanceView === 'monthly') {
           const txMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
           return balanceSelection.includes(txMonth);
         }
-        if (balanceFilterType === 'years') {
+        if (balanceView === 'yearly') {
           return balanceSelection.includes(String(d.getFullYear()));
         }
         return true;
@@ -415,10 +414,11 @@ const App = () => {
           <div className="bg-white dark:bg-gray-900 rounded-xl p-3 shadow-sm">
             <h2 className="text-base font-bold text-blue-600 dark:text-blue-400 mb-3">Balance</h2>
 
-            {/* View toggle — controls grouping only */}
-            <div className="mb-3">
-              <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">View</p>
-              <div className="flex rounded-xl border border-gray-300 dark:border-gray-600 overflow-hidden text-sm font-medium">
+            {/* Unified view + filter card */}
+            <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden mb-4">
+
+              {/* Tab header — Daily / Monthly / Yearly */}
+              <div className="flex border-b border-gray-200 dark:border-gray-700">
                 {[
                   { id: 'daily',   label: 'Daily'   },
                   { id: 'monthly', label: 'Monthly' },
@@ -426,47 +426,11 @@ const App = () => {
                 ].map(({ id, label }) => (
                   <button
                     key={id}
-                    onClick={() => setBalanceView(id)}
-                    className={`flex-1 py-2.5 transition-colors ${
+                    onClick={() => { setBalanceView(id); setBalanceSelection([]); }}
+                    className={`flex-1 py-2.5 text-sm font-medium transition-colors border-b-2 ${
                       balanceView === id
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 active:bg-gray-100 dark:active:bg-gray-600'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Filter — multi-select by dates / months / years */}
-            <div className="mb-4">
-              <div className="flex items-center justify-between mb-1">
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Filter</p>
-                {balanceSelection.length > 0 && (
-                  <button
-                    onClick={() => setBalanceSelection([])}
-                    className="text-xs text-red-400 hover:text-red-500"
-                  >
-                    Clear all
-                  </button>
-                )}
-              </div>
-
-              {/* Filter type toggle */}
-              <div className="flex rounded-xl border border-gray-300 dark:border-gray-600 overflow-hidden text-sm font-medium mb-3">
-                {[
-                  { id: 'dates',  label: 'By Dates'  },
-                  { id: 'months', label: 'By Months' },
-                  { id: 'years',  label: 'By Years'  },
-                ].map(({ id, label }) => (
-                  <button
-                    key={id}
-                    onClick={() => { setBalanceFilterType(id); setBalanceSelection([]); }}
-                    className={`flex-1 py-2 transition-colors ${
-                      balanceFilterType === id
-                        ? 'bg-indigo-500 text-white'
-                        : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 active:bg-gray-100 dark:active:bg-gray-600'
+                        ? 'border-blue-500 text-blue-500 bg-white dark:bg-gray-900'
+                        : 'border-transparent text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 active:bg-gray-100'
                     }`}
                   >
                     {label}
@@ -474,9 +438,9 @@ const App = () => {
                 ))}
               </div>
 
-              {/* By Dates — inline calendar multi-select */}
-              {balanceFilterType === 'dates' && (
-                <>
+              {/* Picker body */}
+              <div className="p-3 bg-white dark:bg-gray-900">
+                {balanceView === 'daily' && (
                   <DatePicker
                     inline
                     selectsMultiple
@@ -485,58 +449,46 @@ const App = () => {
                     shouldCloseOnSelect={false}
                     dateFormat="dd MMM yyyy"
                   />
-                  {balanceSelection.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {balanceSelection.map((d) => (
-                        <span key={toLocalDateStr(d)} className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 rounded-full text-xs">
-                          {formatDate(d.toISOString())}
-                          <button onClick={() => setBalanceSelection((prev) => prev.filter((x) => toLocalDateStr(x) !== toLocalDateStr(d)))}>
-                            <XMarkIcon className="w-3 h-3" />
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </>
-              )}
-
-              {/* By Months — custom inline month grid */}
-              {balanceFilterType === 'months' && (
-                <>
+                )}
+                {balanceView === 'monthly' && (
                   <MonthMultiPicker selected={balanceSelection} onChange={setBalanceSelection} />
-                  {balanceSelection.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {balanceSelection.map((key) => (
-                        <span key={key} className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 rounded-full text-xs">
-                          {fmtMonthKey(key)}
-                          <button onClick={() => setBalanceSelection((prev) => prev.filter((k) => k !== key))}>
-                            <XMarkIcon className="w-3 h-3" />
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </>
-              )}
-
-              {/* By Years — custom inline year grid */}
-              {balanceFilterType === 'years' && (
-                <>
+                )}
+                {balanceView === 'yearly' && (
                   <YearMultiPicker selected={balanceSelection} onChange={setBalanceSelection} />
-                  {balanceSelection.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {balanceSelection.map((key) => (
-                        <span key={key} className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 rounded-full text-xs">
-                          {key}
-                          <button onClick={() => setBalanceSelection((prev) => prev.filter((k) => k !== key))}>
+                )}
+
+                {/* Selected chips */}
+                {balanceSelection.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+                    {balanceSelection.map((item) => {
+                      const label = balanceView === 'daily'
+                        ? formatDate(item.toISOString())
+                        : balanceView === 'monthly' ? fmtMonthKey(item) : item;
+                      const key = balanceView === 'daily' ? toLocalDateStr(item) : item;
+                      return (
+                        <span key={key} className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium">
+                          {label}
+                          <button
+                            onClick={() => setBalanceSelection((prev) =>
+                              balanceView === 'daily'
+                                ? prev.filter((x) => toLocalDateStr(x) !== key)
+                                : prev.filter((k) => k !== key)
+                            )}
+                          >
                             <XMarkIcon className="w-3 h-3" />
                           </button>
                         </span>
-                      ))}
-                    </div>
-                  )}
-                </>
-              )}
+                      );
+                    })}
+                    <button
+                      onClick={() => setBalanceSelection([])}
+                      className="text-xs text-red-400 hover:text-red-500 ml-1"
+                    >
+                      Clear all
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Chart */}
