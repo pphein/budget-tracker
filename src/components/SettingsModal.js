@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   XMarkIcon,
   SunIcon,
@@ -20,7 +20,30 @@ const SettingsModal = ({
   onManageTags,
   installPrompt,
   onInstall,
+  goldPrices,
+  onSaveGoldPrices,
 }) => {
+  const [worldInput, setWorldInput]     = useState('');
+  const [myanmarInput, setMyanmarInput] = useState('');
+  const [goldSaved, setGoldSaved]       = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setWorldInput(goldPrices?.worldPrice ?? '');
+      setMyanmarInput(goldPrices?.myanmarPrice ?? '');
+      setGoldSaved(false);
+    }
+  }, [isOpen, goldPrices]);
+
+  const handleSaveGold = () => {
+    onSaveGoldPrices({
+      worldPrice:   worldInput   ? parseFloat(worldInput)   : null,
+      myanmarPrice: myanmarInput ? parseFloat(myanmarInput) : null,
+    });
+    setGoldSaved(true);
+    setTimeout(() => setGoldSaved(false), 2000);
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -54,14 +77,11 @@ const SettingsModal = ({
                 {theme === 'dark' ? 'Dark Mode' : 'Light Mode'}
               </span>
             </div>
-            {/* Toggle switch */}
             <button
               onClick={onToggleTheme}
               aria-label="Toggle dark mode"
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none ${
-                theme === 'dark'
-                  ? 'bg-[var(--primary-500)]'
-                  : 'bg-gray-300 dark:bg-gray-600'
+                theme === 'dark' ? 'bg-[var(--primary-500)]' : 'bg-gray-300 dark:bg-gray-600'
               }`}
             >
               <span
@@ -97,6 +117,63 @@ const SettingsModal = ({
                 </button>
               );
             })}
+          </div>
+        </div>
+
+        {/* ── GOLD PRICE ── */}
+        <div className="px-4 pt-5 pb-4 border-b border-gray-100 dark:border-gray-800">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-4">
+            Gold Price
+          </h3>
+
+          <div className="space-y-3">
+            {/* World gold */}
+            <div>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
+                World Gold (USD / oz)
+              </label>
+              <input
+                type="number"
+                inputMode="decimal"
+                value={worldInput}
+                onChange={(e) => setWorldInput(e.target.value)}
+                placeholder="e.g. 2350"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400"
+              />
+            </div>
+
+            {/* Myanmar gold */}
+            <div>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
+                Myanmar Gold (MMK / ကျပ်)
+              </label>
+              <input
+                type="number"
+                inputMode="decimal"
+                value={myanmarInput}
+                onChange={(e) => setMyanmarInput(e.target.value)}
+                placeholder="e.g. 560000"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400"
+              />
+            </div>
+
+            <div className="flex items-center justify-between pt-1">
+              <span className="text-xs text-gray-400 dark:text-gray-500">
+                {goldPrices?.updatedAt
+                  ? `Updated: ${new Date(goldPrices.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+                  : 'Not set yet'}
+              </span>
+              <button
+                onClick={handleSaveGold}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  goldSaved
+                    ? 'bg-green-500 text-white'
+                    : 'bg-[var(--primary-500)] hover:bg-[var(--primary-600)] text-white'
+                }`}
+              >
+                {goldSaved ? 'Saved!' : 'Save'}
+              </button>
+            </div>
           </div>
         </div>
 

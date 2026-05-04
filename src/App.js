@@ -20,6 +20,8 @@ import BalanceChart from './components/BalanceChart';
 import SkeletonRows from './components/SkeletonRows';
 import TagSelect from './components/TagSelect';
 import { getInitialColorTheme, applyColorTheme } from './utils/colorTheme';
+import { getGoldPrices, saveGoldPrices } from './utils/goldPrice';
+import GoldPriceBar from './components/GoldPriceBar';
 import {
   addTransaction, getTransactions, deleteTransaction, editTransaction,
   getTags, addTag, deleteTag, editTag, syncDefaultTags,
@@ -60,6 +62,7 @@ const App = () => {
   const [loading, setLoading]           = useState(true);
   const [theme, setTheme]               = useState(getInitialTheme);
   const [colorTheme, setColorTheme]     = useState(getInitialColorTheme);
+  const [goldPrices, setGoldPrices]     = useState(getGoldPrices);
   const [installPrompt, setInstallPrompt] = useState(null);
 
   // Modals
@@ -92,6 +95,11 @@ const App = () => {
   const handleColorThemeChange = (id) => {
     setColorTheme(id);
     applyColorTheme(id);
+  };
+
+  const handleSaveGoldPrices = (prices) => {
+    const saved = saveGoldPrices(prices);
+    setGoldPrices(saved);
   };
 
   const toggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
@@ -411,6 +419,13 @@ const App = () => {
         </div>
       </div>
 
+      {/* Gold price bar */}
+      <GoldPriceBar
+        worldPrice={goldPrices.worldPrice}
+        myanmarPrice={goldPrices.myanmarPrice}
+        updatedAt={goldPrices.updatedAt}
+      />
+
       {/* Summary cards — filtered by selected year + month */}
       <SummaryCards transactions={transactions.filter((t) => matchesFilter(t.date))} activeTab={activeTab} onTabChange={handleTabChange} />
 
@@ -588,6 +603,8 @@ const App = () => {
         onManageTags={() => setIsTagsOpen(true)}
         installPrompt={installPrompt}
         onInstall={handleInstall}
+        goldPrices={goldPrices}
+        onSaveGoldPrices={handleSaveGoldPrices}
       />
 
       <TagsManagementModal
