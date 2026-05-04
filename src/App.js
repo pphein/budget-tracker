@@ -18,6 +18,7 @@ import TagsManagementModal from './components/TagsManagementModal';
 import BalanceChart from './components/BalanceChart';
 import SkeletonRows from './components/SkeletonRows';
 import TagSelect from './components/TagSelect';
+import { getInitialColorTheme, applyColorTheme } from './utils/colorTheme';
 import {
   addTransaction, getTransactions, deleteTransaction, editTransaction,
   getTags, addTag, deleteTag, editTag, syncDefaultTags,
@@ -57,6 +58,7 @@ const App = () => {
   const [balanceView, setBalanceView]   = useState('monthly'); // 'daily'|'monthly'|'yearly'
   const [loading, setLoading]           = useState(true);
   const [theme, setTheme]               = useState(getInitialTheme);
+  const [colorTheme, setColorTheme]     = useState(getInitialColorTheme);
   const [installPrompt, setInstallPrompt] = useState(null);
 
   // Modals
@@ -74,11 +76,21 @@ const App = () => {
   const touchStartY  = useRef(null);
   const isScrolling  = useRef(false);
 
-  // Apply theme on mount and whenever it changes
+  // Apply dark/light theme
   useEffect(() => {
     applyTheme(theme);
     localStorage.setItem('theme', theme);
   }, [theme]);
+
+  // Apply color theme
+  useEffect(() => {
+    applyColorTheme(colorTheme);
+  }, [colorTheme]);
+
+  const handleColorThemeChange = (id) => {
+    setColorTheme(id);
+    applyColorTheme(id);
+  };
 
   const toggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
 
@@ -608,6 +620,8 @@ const App = () => {
         onEdit={handleEditTag}
         onSync={handleSyncTags}
         activeType={activeTab !== 'balance' ? activeTab : 'income'}
+        colorTheme={colorTheme}
+        onColorThemeChange={handleColorThemeChange}
       />
 
       <InfoModal
