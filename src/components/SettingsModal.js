@@ -9,10 +9,19 @@ import {
   ArrowPathIcon,
   EyeIcon,
   EyeSlashIcon,
+  LockClosedIcon,
 } from '@heroicons/react/24/outline';
 import { ChevronRightIcon } from '@heroicons/react/20/solid';
 import { COLOR_THEMES } from '../utils/colorTheme';
 import { getGoldApiKey, saveGoldApiKey, fetchWorldGoldPrice } from '../utils/goldPrice';
+import { isPinEnabled, getLockTimeout, setLockTimeout, disablePin } from '../utils/pin';
+
+const LOCK_OPTIONS = [
+  { label: '1 min',  value: 1  },
+  { label: '5 min',  value: 5  },
+  { label: '15 min', value: 15 },
+  { label: 'Never',  value: 0  },
+];
 
 const SettingsModal = ({
   isOpen,
@@ -26,7 +35,11 @@ const SettingsModal = ({
   onInstall,
   goldPrices,
   onSaveGoldPrices,
+  onSetupPin,
+  onChangePin,
 }) => {
+  const [pinEnabled,   setPinEnabled]   = useState(false);
+  const [lockTimeout,  setLockTimeoutV] = useState(5);
   const [worldInput, setWorldInput]     = useState('');
   const [myanmarInput, setMyanmarInput] = useState('');
   const [goldSaved, setGoldSaved]       = useState(false);
@@ -43,8 +56,25 @@ const SettingsModal = ({
       setGoldSaved(false);
       setFetchError('');
       setApiKey(getGoldApiKey());
+      setPinEnabled(isPinEnabled());
+      setLockTimeoutV(getLockTimeout());
     }
   }, [isOpen, goldPrices]);
+
+  const handleTogglePin = () => {
+    if (pinEnabled) {
+      disablePin();
+      setPinEnabled(false);
+    } else {
+      onClose();
+      onSetupPin();
+    }
+  };
+
+  const handleLockTimeout = (val) => {
+    setLockTimeoutV(val);
+    setLockTimeout(val);
+  };
 
   const handleSaveGold = () => {
     if (apiKey.trim()) saveGoldApiKey(apiKey.trim());
@@ -259,6 +289,64 @@ const SettingsModal = ({
               </button>
             </div>
           </div>
+        </div>
+
+        {/* ── SECURITY ── */}
+        <div className="px-4 pt-5 pb-4 border-b border-gray-100 dark:border-gray-800">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-4">
+            Security
+          </h3>
+
+          {/* PIN toggle */}
+          <div className="flex items-center justify-between py-1 mb-3">
+            <div className="flex items-center gap-3">
+              <LockClosedIcon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-200">PIN Lock</span>
+            </div>
+            <button
+              onClick={handleTogglePin}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none ${
+                pinEnabled ? 'bg-[var(--primary-500)]' : 'bg-gray-300 dark:bg-gray-600'
+              }`}
+            >
+              <span className={`inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                pinEnabled ? 'translate-x-6' : 'translate-x-1'
+              }`} />
+            </button>
+          </div>
+
+          {/* Change PIN + Auto-lock (visible only when PIN enabled) */}
+          {pinEnabled && (
+            <>
+              <button
+                onClick={() => { onClose(); onChangePin(); }}
+                className="w-full flex items-center justify-between px-3 py-3 rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors mb-3"
+              >
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Change PIN</span>
+                <ChevronRightIcon className="w-4 h-4 text-gray-400" />
+              </button>
+
+              {/* Auto-lock timeout */}
+              <div>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Auto-lock after</p>
+                <div className="flex rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+                  {LOCK_OPTIONS.map(({ label, value }) => (
+                    <button
+                      key={value}
+                      onClick={() => handleLockTimeout(value)}
+                      className={`flex-1 py-2 text-xs font-medium transition-colors ${
+                        lockTimeout === value
+                          ? 'bg-[var(--primary-500)] text-white'
+                          : 'bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         {/* ── DATA ── */}

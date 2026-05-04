@@ -48,3 +48,13 @@ html.dark .bg-primary-tint {
 html.dark .bg-primary-tint-subtle {
   background-color: rgb(var(--primary-900-rgb) / 0.2);
 }
+
+/* ── PIN shake animation ──────────────────────────────────────────────────── */
+@keyframes pin-shake {
+  0%, 100% { transform: translateX(0);    }
+  15%, 45%, 75% { transform: translateX(-10px); }
+  30%, 60%, 90% { transform: translateX( 10px); }
+}
+.animate-pin-shake {
+  animation: pin-shake 0.5s ease-in-out;
+}

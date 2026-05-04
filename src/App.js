@@ -16,11 +16,14 @@ import EditTransactionModal from './components/EditTransactionModal';
 import DeleteConfirmModal from './components/DeleteConfirmModal';
 import TagsManagementModal from './components/TagsManagementModal';
 import SettingsModal from './components/SettingsModal';
+import PinScreen from './components/PinScreen';
+import PinSetupModal from './components/PinSetupModal';
 import BalanceChart from './components/BalanceChart';
 import SkeletonRows from './components/SkeletonRows';
 import TagSelect from './components/TagSelect';
 import { getInitialColorTheme, applyColorTheme } from './utils/colorTheme';
 import { getGoldPrices, saveGoldPrices } from './utils/goldPrice';
+import { isPinEnabled, shouldLockNow, recordActivity } from './utils/pin';
 import GoldPriceBar from './components/GoldPriceBar';
 import {
   addTransaction, getTransactions, deleteTransaction, editTransaction,
@@ -65,6 +68,11 @@ const App = () => {
   const [goldPrices, setGoldPrices]     = useState(getGoldPrices);
   const [installPrompt, setInstallPrompt] = useState(null);
 
+  // PIN / lock
+  const [isLocked, setIsLocked]               = useState(false);
+  const [isPinSetupOpen, setIsPinSetupOpen]   = useState(false);
+  const [pinSetupMode, setPinSetupMode]       = useState('setup'); // 'setup' | 'change'
+
   // Modals
   const [editingTx, setEditingTx]               = useState(null);
   const [isEditOpen, setIsEditOpen]             = useState(false);
@@ -80,6 +88,44 @@ const App = () => {
   const touchStartX  = useRef(null);
   const touchStartY  = useRef(null);
   const isScrolling  = useRef(false);
+
+  // ─── PIN lock ─────────────────────────────────────────────────────────────
+  // Lock on mount if PIN is enabled
+  useEffect(() => {
+    if (isPinEnabled()) setIsLocked(true);
+  }, []);
+
+  // Lock on visibility restore if auto-lock timeout has elapsed
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (!document.hidden && shouldLockNow()) setIsLocked(true);
+      if (document.hidden) recordActivity(); // stamp when leaving
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, []);
+
+  // Record activity on any touch/click so auto-lock timeout resets
+  const handleUserActivity = () => { if (!isLocked) recordActivity(); };
+
+  const handleUnlock = () => {
+    recordActivity();
+    setIsLocked(false);
+  };
+
+  const handleSetupPin = () => {
+    setPinSetupMode('setup');
+    setIsPinSetupOpen(true);
+  };
+
+  const handleChangePin = () => {
+    setPinSetupMode('change');
+    setIsPinSetupOpen(true);
+  };
+
+  const handlePinSetupSuccess = () => {
+    setIsLocked(false); // already "logged in" after setting PIN
+  };
 
   // Apply dark/light theme
   useEffect(() => {
@@ -324,11 +370,15 @@ const App = () => {
   );
 
   // ─── Render ───────────────────────────────────────────────────────────────
+  // Show PIN lock screen — nothing else rendered beneath it
+  if (isLocked) return <PinScreen onUnlock={handleUnlock} />;
+
   return (
     <div
       className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-20"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
+      onClick={handleUserActivity}
     >
       {/* Header */}
       <header className="sticky top-0 z-30 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-between">
@@ -605,6 +655,15 @@ const App = () => {
         onInstall={handleInstall}
         goldPrices={goldPrices}
         onSaveGoldPrices={handleSaveGoldPrices}
+        onSetupPin={handleSetupPin}
+        onChangePin={handleChangePin}
+      />
+
+      <PinSetupModal
+        isOpen={isPinSetupOpen}
+        onClose={() => setIsPinSetupOpen(false)}
+        mode={pinSetupMode}
+        onSuccess={handlePinSetupSuccess}
       />
 
       <TagsManagementModal
