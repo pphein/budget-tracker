@@ -7,7 +7,7 @@ const register = () => {
       window.addEventListener('load', () => {
         console.log('Window loaded');
         navigator.serviceWorker
-          .register('./service-worker.js')
+          .register(process.env.PUBLIC_URL + '/service-worker.js')
           .then(reg => console.log('Service Worker registered:', reg))
           .catch(err => console.error('Service Worker registration failed:', err));
       });
