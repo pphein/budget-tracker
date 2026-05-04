@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, forwardRef, Fragment } from 'react';
 import { Listbox, Transition } from '@headlessui/react';
-import { CheckIcon, ChevronUpDownIcon, Cog6ToothIcon, XMarkIcon } from '@heroicons/react/20/solid';
+import { CheckIcon, ChevronUpDownIcon, Cog6ToothIcon, XMarkIcon, ArrowDownTrayIcon } from '@heroicons/react/20/solid';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
@@ -72,6 +74,24 @@ const App = () => {
 
   // ─── Helpers ──────────────────────────────────────────────────────────────
   const showToast = (message, type = 'success') => setToast({ message, type });
+
+  const exportBalance = () => {
+    const dateLabel = balanceView === 'yearly' ? 'Year' : balanceView === 'monthly' ? 'Month' : 'Date';
+    const rows = balanceData.map((row) => ({
+      [dateLabel]: balanceView === 'monthly'
+        ? new Date(row.date + '-01').toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+        : row.date,
+      Income:  row.income,
+      Expense: row.expense,
+      Net:     row.income - row.expense,
+    }));
+    rows.push({ [dateLabel]: 'Total', Income: balanceTotals.income, Expense: balanceTotals.expense, Net: balanceTotals.income - balanceTotals.expense });
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Balance');
+    const buf = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    saveAs(new Blob([buf], { type: 'application/octet-stream' }), `balance-${balanceView}-${new Date().toISOString().slice(0,10)}.xlsx`);
+  };
   const showInfo  = (message) => { setInfoMessage(message); setIsInfoOpen(true); };
 
   const formatDate = (isoString) => {
@@ -494,7 +514,18 @@ const App = () => {
         {/* ── Balance tab ── */}
         {activeTab === 'balance' && (
           <div className="bg-white dark:bg-gray-900 rounded-xl p-3 shadow-sm">
-            <h2 className="text-base font-bold text-blue-600 dark:text-blue-400 mb-3">Balance</h2>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-base font-bold text-blue-600 dark:text-blue-400">Balance</h2>
+              {balanceData.length > 0 && (
+                <button
+                  onClick={exportBalance}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-500 active:bg-green-600 text-white text-xs font-medium"
+                >
+                  <ArrowDownTrayIcon className="w-3.5 h-3.5" />
+                  Export
+                </button>
+              )}
+            </div>
 
             {/* Chart */}
             <BalanceChart data={balanceData} view={balanceView} />
