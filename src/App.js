@@ -292,13 +292,9 @@ const App = () => {
         </div>
       </header>
 
-      {/* Summary cards — always visible */}
-      <SummaryCards transactions={transactions} activeTab={activeTab} onTabChange={handleTabChange} />
-
-      <main className="px-2 sm:px-4 max-w-6xl mx-auto">
-
-        {/* ── Global year + month filter — all tabs ── */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm mb-3 p-3">
+      {/* ── Global year + month filter ── */}
+      <div className="px-2 sm:px-4 max-w-6xl mx-auto mt-3">
+        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm p-3">
           {/* Year navigation */}
           <div className="flex items-center justify-between mb-2">
             <button
@@ -332,6 +328,12 @@ const App = () => {
             ))}
           </div>
         </div>
+      </div>
+
+      {/* Summary cards — filtered by selected year + month */}
+      <SummaryCards transactions={transactions.filter((t) => matchesFilter(t.date))} activeTab={activeTab} onTabChange={handleTabChange} />
+
+      <main className="px-2 sm:px-4 max-w-6xl mx-auto">
 
         {/* ── Income / Expense tab ── */}
         {activeTab !== 'balance' && (
