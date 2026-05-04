@@ -53,6 +53,7 @@ const App = () => {
   const [filterEnd, setFilterEnd]       = useState(null);
   const [balanceStart, setBalanceStart] = useState(null);
   const [balanceEnd, setBalanceEnd]     = useState(null);
+  const [balanceView, setBalanceView]   = useState('monthly'); // 'daily' | 'monthly' | 'yearly'
   const [loading, setLoading]           = useState(true);
 
   // Modals
@@ -205,6 +206,43 @@ const App = () => {
     showToast('Tag updated');
   };
 
+  // ─── Balance presets ──────────────────────────────────────────────────────
+  const applyBalancePreset = (preset) => {
+    const now   = new Date();
+    const y     = now.getFullYear();
+    const m     = now.getMonth();
+    const isoStart = (d) => d.toISOString().slice(0, 10);
+    const isoEnd   = (d) => d.toISOString();
+    switch (preset) {
+      case 'this-month':
+        setBalanceStart(isoStart(new Date(y, m, 1)));
+        setBalanceEnd(isoEnd(new Date(y, m + 1, 0, 23, 59, 59)));
+        setBalanceView('daily');
+        break;
+      case 'last-month':
+        setBalanceStart(isoStart(new Date(y, m - 1, 1)));
+        setBalanceEnd(isoEnd(new Date(y, m, 0, 23, 59, 59)));
+        setBalanceView('daily');
+        break;
+      case 'this-year':
+        setBalanceStart(isoStart(new Date(y, 0, 1)));
+        setBalanceEnd(isoEnd(new Date(y, 11, 31, 23, 59, 59)));
+        setBalanceView('monthly');
+        break;
+      case 'last-year':
+        setBalanceStart(isoStart(new Date(y - 1, 0, 1)));
+        setBalanceEnd(isoEnd(new Date(y - 1, 11, 31, 23, 59, 59)));
+        setBalanceView('monthly');
+        break;
+      case 'all':
+      default:
+        setBalanceStart(null);
+        setBalanceEnd(null);
+        setBalanceView('yearly');
+        break;
+    }
+  };
+
   // ─── Filtered records ─────────────────────────────────────────────────────
   const filteredRecords = transactions.filter((r) => {
     if (r.type !== activeTab) return false;
@@ -215,21 +253,27 @@ const App = () => {
   });
 
   // ─── Balance data ─────────────────────────────────────────────────────────
+  const balanceGroupKey = (isoDate) => {
+    if (balanceView === 'monthly') return isoDate.slice(0, 7); // YYYY-MM
+    if (balanceView === 'yearly')  return isoDate.slice(0, 4); // YYYY
+    return isoDate.slice(0, 10);                               // YYYY-MM-DD
+  };
+
   const balanceData = Object.values(
-    transactions.reduce((acc, t) => {
-      const day = new Date(t.date).toISOString().split('T')[0];
-      if (!acc[day]) acc[day] = { date: day, income: 0, expense: 0 };
-      if (t.type === 'income')  acc[day].income  += parseFloat(t.amount || 0);
-      if (t.type === 'expense') acc[day].expense += parseFloat(t.amount || 0);
-      return acc;
-    }, {})
-  )
-    .sort((a, b) => new Date(a.date) - new Date(b.date))
-    .filter((row) => {
-      if (!balanceStart || !balanceEnd) return true;
-      const d = new Date(row.date);
-      return d >= new Date(balanceStart) && d <= new Date(balanceEnd);
-    });
+    transactions
+      .filter((t) => {
+        if (!balanceStart || !balanceEnd) return true;
+        const d = new Date(t.date);
+        return d >= new Date(balanceStart) && d <= new Date(balanceEnd);
+      })
+      .reduce((acc, t) => {
+        const key = balanceGroupKey(new Date(t.date).toISOString().split('T')[0]);
+        if (!acc[key]) acc[key] = { date: key, income: 0, expense: 0 };
+        if (t.type === 'income')  acc[key].income  += parseFloat(t.amount || 0);
+        if (t.type === 'expense') acc[key].expense += parseFloat(t.amount || 0);
+        return acc;
+      }, {})
+  ).sort((a, b) => a.date.localeCompare(b.date));
 
   const balanceTotals = balanceData.reduce(
     (acc, row) => ({ income: acc.income + row.income, expense: acc.expense + row.expense }),
@@ -395,32 +439,70 @@ const App = () => {
         {/* ── Balance tab ── */}
         {activeTab === 'balance' && (
           <div className="bg-white dark:bg-gray-900 rounded-xl p-3 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-base font-bold text-blue-600 dark:text-blue-400">Daily Balance</h2>
+            <h2 className="text-base font-bold text-blue-600 dark:text-blue-400 mb-3">Balance</h2>
+
+            {/* Quick presets */}
+            <div className="flex flex-wrap gap-2 mb-3">
+              {[
+                { key: 'this-month', label: 'This Month' },
+                { key: 'last-month', label: 'Last Month' },
+                { key: 'this-year',  label: 'This Year'  },
+                { key: 'last-year',  label: 'Last Year'  },
+                { key: 'all',        label: 'All'        },
+              ].map(({ key, label }) => (
+                <button
+                  key={key}
+                  onClick={() => applyBalancePreset(key)}
+                  className="px-3 py-1.5 rounded-full text-xs font-medium border border-blue-300 dark:border-blue-700 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 active:bg-blue-100"
+                >
+                  {label}
+                </button>
+              ))}
             </div>
 
-            {/* Balance date range */}
-            <div className="mb-4">
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Date Range</label>
-              <DatePicker
-                selectsRange
-                startDate={balanceStart ? new Date(balanceStart) : null}
-                endDate={balanceEnd ? new Date(balanceEnd) : null}
-                onChange={([start, end]) => {
-                  setBalanceStart(start ? start.toISOString().slice(0, 10) : null);
-                  setBalanceEnd(end ? end.toISOString() : null);
-                }}
-                isClearable
-                withPortal
-                dateFormat="dd-MM-yyyy"
-                customInput={
-                  <BalanceDateBtn />
-                }
-              />
+            {/* View toggle + custom date range */}
+            <div className="flex flex-wrap items-end gap-3 mb-4">
+              {/* View mode */}
+              <div>
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">View</label>
+                <div className="flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden text-xs font-medium">
+                  {['daily', 'monthly', 'yearly'].map((v) => (
+                    <button
+                      key={v}
+                      onClick={() => setBalanceView(v)}
+                      className={`px-3 py-2 capitalize transition-colors ${
+                        balanceView === v
+                          ? 'bg-blue-500 text-white'
+                          : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      {v}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Custom date range picker */}
+              <div className="flex-1 min-w-0">
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Custom Range</label>
+                <DatePicker
+                  selectsRange
+                  startDate={balanceStart ? new Date(balanceStart) : null}
+                  endDate={balanceEnd ? new Date(balanceEnd) : null}
+                  onChange={([start, end]) => {
+                    setBalanceStart(start ? start.toISOString().slice(0, 10) : null);
+                    setBalanceEnd(end ? end.toISOString() : null);
+                  }}
+                  isClearable
+                  withPortal
+                  dateFormat="dd-MM-yyyy"
+                  customInput={<BalanceDateBtn />}
+                />
+              </div>
             </div>
 
             {/* Chart */}
-            <BalanceChart data={balanceData} />
+            <BalanceChart data={balanceData} view={balanceView} />
 
             {/* Table */}
             {loading ? (
@@ -432,7 +514,9 @@ const App = () => {
                 <table className="w-full border-collapse border border-gray-300 dark:border-gray-600 text-sm">
                   <thead>
                     <tr className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200">
-                      <th className="border border-gray-300 dark:border-gray-600 p-2 text-left">Date</th>
+                      <th className="border border-gray-300 dark:border-gray-600 p-2 text-left">
+                        {balanceView === 'yearly' ? 'Year' : balanceView === 'monthly' ? 'Month' : 'Date'}
+                      </th>
                       <th className="border border-gray-300 dark:border-gray-600 p-2 text-right">Income</th>
                       <th className="border border-gray-300 dark:border-gray-600 p-2 text-right">Expense</th>
                       <th className="border border-gray-300 dark:border-gray-600 p-2 text-right">Net</th>
@@ -443,7 +527,11 @@ const App = () => {
                       const net = row.income - row.expense;
                       return (
                         <tr key={row.date} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                          <td className="border border-gray-300 dark:border-gray-600 p-2 text-gray-700 dark:text-gray-300">{row.date}</td>
+                          <td className="border border-gray-300 dark:border-gray-600 p-2 text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                            {balanceView === 'monthly'
+                              ? new Date(row.date + '-01').toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+                              : row.date}
+                          </td>
                           <td className="border border-gray-300 dark:border-gray-600 p-2 text-right text-green-600 dark:text-green-400">{new Intl.NumberFormat().format(row.income)}</td>
                           <td className="border border-gray-300 dark:border-gray-600 p-2 text-right text-red-600 dark:text-red-400">{new Intl.NumberFormat().format(row.expense)}</td>
                           <td className={`border border-gray-300 dark:border-gray-600 p-2 text-right font-bold ${net >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'}`}>

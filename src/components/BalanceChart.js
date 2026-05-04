@@ -7,11 +7,20 @@ import {
 const fmtK = (v) => (v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v);
 const fmtFull = (v) => new Intl.NumberFormat().format(v);
 
-const BalanceChart = ({ data }) => {
+const formatLabel = (dateKey, view) => {
+  if (view === 'yearly')  return dateKey;                      // "2026"
+  if (view === 'monthly') {
+    const [y, m] = dateKey.split('-');
+    return new Date(Number(y), Number(m) - 1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }); // "Jan '26"
+  }
+  return dateKey.slice(5); // "MM-DD"
+};
+
+const BalanceChart = ({ data, view = 'daily' }) => {
   if (!data || data.length === 0) return null;
 
   const chartData = data.map((row) => ({
-    date: row.date.slice(5),
+    date: formatLabel(row.date, view),
     Income: row.income,
     Expense: row.expense,
   }));
