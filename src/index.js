@@ -16,8 +16,13 @@ jeepSqlite(window);
 
 const initSQLiteAndRender = async () => {
   if (!Capacitor.isNativePlatform()) {
-    // Web / PWA: wait for the custom element then initialise the web store
     await customElements.whenDefined('jeep-sqlite');
+
+    const jeepEl = document.querySelector('jeep-sqlite');
+
+    // 🔥 IMPORTANT: set wasm path
+    jeepEl.autoSave = true;
+
     const sqlite = new SQLiteConnection(CapacitorSQLite);
     await sqlite.initWebStore();
   }
