@@ -1,7 +1,8 @@
-import { CapacitorSQLite, SQLiteConnection } from '@capacitor-community/sqlite';
-import { migrateFromIndexedDB } from './db.migrate';
+import { openDB } from 'idb';
 
-// ─── Default tags seeded on first install ─────────────────────────────────────
+const DB_NAME    = 'BudgetTrackerDB';
+const DB_VERSION = 1;
+
 const DEFAULT_TAGS = [
   // Income
   { name: 'Salary',           type: 'income',  colorIndex: 1 },
@@ -41,137 +42,92 @@ const DEFAULT_TAGS = [
   { name: 'Snacks',           type: 'expense', colorIndex: 0 },
 ];
 
-// ─── Schema ───────────────────────────────────────────────────────────────────
-const SCHEMA = `
-  CREATE TABLE IF NOT EXISTS transactions (
-    id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    type       TEXT    NOT NULL,
-    tag        TEXT    NOT NULL,
-    amount     REAL    NOT NULL,
-    date       TEXT    NOT NULL
-  );
-  CREATE TABLE IF NOT EXISTS tags (
-    id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    name       TEXT    NOT NULL,
-    type       TEXT    NOT NULL,
-    colorIndex INTEGER NOT NULL DEFAULT 0
-  );
-`;
+let _db = null;
 
-// ─── Singleton connection ──────────────────────────────────────────────────────
-const DB_NAME = 'budget_tracker';
-const sqlite  = new SQLiteConnection(CapacitorSQLite);
-let _db       = null;
+const getDB = async () => {
+  if (_db) return _db;
+  _db = await openDB(DB_NAME, DB_VERSION, {
+    upgrade(db) {
+      if (!db.objectStoreNames.contains('transactions')) {
+        db.createObjectStore('transactions', { keyPath: 'id', autoIncrement: true });
+      }
+      if (!db.objectStoreNames.contains('tags')) {
+        db.createObjectStore('tags', { keyPath: 'id', autoIncrement: true });
+      }
+    },
+  });
+  return _db;
+};
 
 export const initDB = async () => {
-  if (_db) return _db;
-
-  const { result: consistent } = await sqlite.checkConnectionsConsistency();
-  const { result: isConn }     = await sqlite.isConnection(DB_NAME, false);
-
-  if (consistent && isConn) {
-    _db = await sqlite.retrieveConnection(DB_NAME, false);
-  } else {
-    _db = await sqlite.createConnection(DB_NAME, false, 'no-encryption', 1, false);
+  const db = await getDB();
+  const existing = await db.getAll('tags');
+  if (existing.length === 0) {
+    const tx = db.transaction('tags', 'readwrite');
+    await Promise.all(DEFAULT_TAGS.map((t) => tx.store.add(t)));
+    await tx.done;
   }
-
-  await _db.open();
-  await _db.execute(SCHEMA);
-
-  // One-time migration from IndexedDB (no-op if already done or fresh install)
-  await migrateFromIndexedDB(_db);
-
-  // Seed defaults only if tags table is still empty after migration
-  const { values } = await _db.query('SELECT COUNT(*) AS cnt FROM tags');
-  if (values[0].cnt === 0) {
-    await _db.executeSet(
-      DEFAULT_TAGS.map((t) => ({
-        statement: 'INSERT INTO tags (name, type, colorIndex) VALUES (?, ?, ?)',
-        values: [t.name, t.type, t.colorIndex],
-      }))
-    );
-  }
-
-  return _db;
+  return db;
 };
 
 // ─── Transactions ──────────────────────────────────────────────────────────────
 export const getTransactions = async () => {
   const db = await initDB();
-  const { values } = await db.query('SELECT * FROM transactions ORDER BY date DESC');
-  return values ?? [];
+  return db.getAll('transactions');
 };
 
 export const addTransaction = async ({ type, tag, amount, date }) => {
   const db = await initDB();
-  await db.run(
-    'INSERT INTO transactions (type, tag, amount, date) VALUES (?, ?, ?, ?)',
-    [type, tag, parseFloat(amount), date]
-  );
+  await db.add('transactions', { type, tag, amount: parseFloat(amount), date });
 };
 
 export const editTransaction = async (id, updates) => {
   const db = await initDB();
-  // Fetch existing to merge (EditTransactionModal does not send `type`)
-  const { values } = await db.query('SELECT * FROM transactions WHERE id=?', [id]);
-  if (!values?.length) throw new Error(`Transaction ${id} not found`);
-  const merged = { ...values[0], ...updates };
-  await db.run(
-    'UPDATE transactions SET type=?, tag=?, amount=?, date=? WHERE id=?',
-    [merged.type, merged.tag, parseFloat(merged.amount), merged.date, id]
-  );
+  const existing = await db.get('transactions', id);
+  if (!existing) throw new Error(`Transaction ${id} not found`);
+  await db.put('transactions', { ...existing, ...updates, id });
 };
 
 export const deleteTransaction = async (id) => {
   const db = await initDB();
-  await db.run('DELETE FROM transactions WHERE id=?', [id]);
+  await db.delete('transactions', id);
 };
 
 // ─── Tags ──────────────────────────────────────────────────────────────────────
 export const getTags = async () => {
   const db = await initDB();
-  const { values } = await db.query('SELECT * FROM tags ORDER BY id ASC');
-  return values ?? [];
+  return db.getAll('tags');
 };
 
 export const addTag = async ({ name, type, colorIndex }) => {
   const db = await initDB();
-  await db.run(
-    'INSERT INTO tags (name, type, colorIndex) VALUES (?, ?, ?)',
-    [name, type, colorIndex]
-  );
+  await db.add('tags', { name, type, colorIndex });
 };
 
 export const editTag = async (id, updates) => {
   const db = await initDB();
-  const allowed = ['name', 'colorIndex'];
-  const keys    = Object.keys(updates).filter((k) => allowed.includes(k));
-  if (!keys.length) return;
-  const setClauses = keys.map((k) => `${k}=?`).join(', ');
-  await db.run(
-    `UPDATE tags SET ${setClauses} WHERE id=?`,
-    [...keys.map((k) => updates[k]), id]
-  );
+  const existing = await db.get('tags', id);
+  if (!existing) return;
+  const updated = { ...existing };
+  if ('name'       in updates) updated.name       = updates.name;
+  if ('colorIndex' in updates) updated.colorIndex = updates.colorIndex;
+  await db.put('tags', updated);
 };
 
 export const deleteTag = async (id) => {
   const db = await initDB();
-  await db.run('DELETE FROM tags WHERE id=?', [id]);
+  await db.delete('tags', id);
 };
 
 export const syncDefaultTags = async () => {
   const db = await initDB();
-  const { values: existing } = await db.query('SELECT name FROM tags');
-  const existingNames = (existing ?? []).map((t) => t.name.toLowerCase());
-  const missing = DEFAULT_TAGS.filter((t) => !existingNames.includes(t.name.toLowerCase()));
+  const existing     = await db.getAll('tags');
+  const existingNames = existing.map((t) => t.name.toLowerCase());
+  const missing      = DEFAULT_TAGS.filter((t) => !existingNames.includes(t.name.toLowerCase()));
   if (missing.length > 0) {
-    await db.executeSet(
-      missing.map((t) => ({
-        statement: 'INSERT INTO tags (name, type, colorIndex) VALUES (?, ?, ?)',
-        values: [t.name, t.type, t.colorIndex],
-      }))
-    );
+    const tx = db.transaction('tags', 'readwrite');
+    await Promise.all(missing.map((t) => tx.store.add(t)));
+    await tx.done;
   }
-  const { values } = await db.query('SELECT * FROM tags ORDER BY id ASC');
-  return values ?? [];
+  return db.getAll('tags');
 };
