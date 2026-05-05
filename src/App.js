@@ -657,6 +657,7 @@ const App = () => {
         onSaveGoldPrices={handleSaveGoldPrices}
         onSetupPin={handleSetupPin}
         onChangePin={handleChangePin}
+        onStorageChange={loadAll}
       />
 
       <PinSetupModal

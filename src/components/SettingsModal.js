@@ -15,6 +15,7 @@ import { ChevronRightIcon } from '@heroicons/react/20/solid';
 import { COLOR_THEMES } from '../utils/colorTheme';
 import { getGoldApiKey, saveGoldApiKey, fetchWorldGoldPrice } from '../utils/goldPrice';
 import { isPinEnabled, getLockTimeout, setLockTimeout, disablePin } from '../utils/pin';
+import { STORAGE_OPTIONS, getStorageType, setStorageType } from '../db';
 
 const LOCK_OPTIONS = [
   { label: '1 min',  value: 1  },
@@ -37,9 +38,11 @@ const SettingsModal = ({
   onSaveGoldPrices,
   onSetupPin,
   onChangePin,
+  onStorageChange,
 }) => {
   const [pinEnabled,   setPinEnabled]   = useState(false);
   const [lockTimeout,  setLockTimeoutV] = useState(5);
+  const [storageType,  setStorageTypeV] = useState(() => getStorageType());
   const [worldInput, setWorldInput]     = useState('');
   const [myanmarInput, setMyanmarInput] = useState('');
   const [goldSaved, setGoldSaved]       = useState(false);
@@ -58,6 +61,7 @@ const SettingsModal = ({
       setApiKey(getGoldApiKey());
       setPinEnabled(isPinEnabled());
       setLockTimeoutV(getLockTimeout());
+      setStorageTypeV(getStorageType());
     }
   }, [isOpen, goldPrices]);
 
@@ -74,6 +78,12 @@ const SettingsModal = ({
   const handleLockTimeout = (val) => {
     setLockTimeoutV(val);
     setLockTimeout(val);
+  };
+
+  const handleStorageChange = (val) => {
+    setStorageTypeV(val);
+    setStorageType(val);
+    onStorageChange?.();
   };
 
   const handleSaveGold = () => {
@@ -354,6 +364,32 @@ const SettingsModal = ({
           <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-3">
             Data
           </h3>
+
+          {/* Storage type */}
+          <div className="mb-4">
+            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Storage</p>
+            <div className="flex rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+              {STORAGE_OPTIONS.map(({ value, label }) => (
+                <button
+                  key={value}
+                  onClick={() => handleStorageChange(value)}
+                  className={`flex-1 py-2.5 text-xs font-medium transition-colors ${
+                    storageType === value
+                      ? 'bg-[var(--primary-500)] text-white'
+                      : 'bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <p className="mt-1.5 text-xs text-gray-400 dark:text-gray-500">
+              {storageType === 'localStorage'
+                ? 'Stored in browser localStorage — simple and reliable.'
+                : 'Stored in IndexedDB — larger capacity, same device.'}
+            </p>
+          </div>
+
           <button
             onClick={() => { onClose(); onManageTags(); }}
             className="w-full flex items-center justify-between px-3 py-3 rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
