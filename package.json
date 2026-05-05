@@ -30,9 +30,9 @@
     "xlsx": "^0.18.5"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
+    "start": "react-app-rewired start",
+    "build": "react-app-rewired build",
+    "test": "react-app-rewired test",
     "eject": "react-scripts eject",
     "postinstall": "node -e \"const fs=require('fs'),src='node_modules/sql.js/dist/sql-wasm.wasm',dst='public/sql-wasm.wasm';if(fs.existsSync(src))fs.copyFileSync(src,dst)\""
   },
@@ -57,6 +57,7 @@
   "devDependencies": {
     "autoprefixer": "^10.4.21",
     "postcss": "^8.5.3",
+    "react-app-rewired": "^2.2.1",
     "tailwindcss": "^3.4.17"
   }
 }
