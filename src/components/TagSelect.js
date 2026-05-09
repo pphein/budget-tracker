@@ -38,7 +38,7 @@ const TagSelect = ({ tags, value, onChange, placeholder = 'Select a tag…' }) =
 
       {/* Bottom-sheet modal */}
       {open && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center px-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
           {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/40"
