@@ -21,6 +21,7 @@ import PinSetupModal from './components/PinSetupModal';
 import BalanceChart from './components/BalanceChart';
 import SkeletonRows from './components/SkeletonRows';
 import TagSelect from './components/TagSelect';
+import NumPad from './components/NumPad';
 import { getInitialColorTheme, applyColorTheme } from './utils/colorTheme';
 import { getGoldPrices, saveGoldPrices } from './utils/goldPrice';
 import { isPinEnabled, shouldLockNow, recordActivity } from './utils/pin';
@@ -504,14 +505,7 @@ const App = () => {
                 />
 
                 {/* Amount */}
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder="Amount"
-                  className="flex-1 min-w-0 py-2.5 px-3 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 placeholder-gray-400"
-                />
+                <NumPad value={amount} onChange={setAmount} />
 
                 {/* Save */}
                 <button
