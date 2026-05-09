@@ -1,8 +1,15 @@
-import React, { useState, useEffect, Fragment } from 'react';
-import { Dialog, Listbox, Transition } from '@headlessui/react';
-import { CheckIcon, ChevronUpDownIcon } from '@heroicons/react/20/solid';
+import React, { useState, useEffect, forwardRef } from 'react';
+import { XMarkIcon } from '@heroicons/react/24/outline';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import TagSelect from './TagSelect';
+import NumPad from './NumPad';
+
+const DateBtn = forwardRef(({ value, onClick, className }, ref) => (
+  <button type="button" onClick={onClick} ref={ref} className={className}>
+    {value}
+  </button>
+));
 
 const EditTransactionModal = ({ isOpen, onClose, onSave, transaction, tags }) => {
   const [amount, setAmount] = useState('');
@@ -11,112 +18,85 @@ const EditTransactionModal = ({ isOpen, onClose, onSave, transaction, tags }) =>
 
   useEffect(() => {
     if (transaction) {
-      setAmount(transaction.amount ?? '');
+      setAmount(String(transaction.amount ?? ''));
       setTag(transaction.tag ?? '');
       setDate(transaction.date ? new Date(transaction.date) : new Date());
     }
   }, [transaction]);
 
-  const handleSubmit = () => {
+  const handleSave = () => {
     if (!amount) return;
     onSave(transaction.id, { amount: parseFloat(amount), tag, date: date?.toISOString() });
     onClose();
   };
 
+  if (!isOpen || !transaction) return null;
+
   return (
-    <Dialog open={isOpen} onClose={onClose} className="relative z-50">
-      <div className="fixed inset-0 bg-black/40" aria-hidden="true" />
-      <div className="fixed inset-0 flex items-center justify-center p-4">
-        <Dialog.Panel className="w-full max-w-sm rounded-xl bg-white dark:bg-gray-800 p-6 shadow-xl">
-          <Dialog.Title className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
-            Edit Transaction
-          </Dialog.Title>
+    // z-[45] keeps edit modal below NumPad/TagSelect overlays at z-50
+    <div className="fixed inset-0 z-[45] flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
-          <div className="space-y-4">
-            {/* Tag */}
-            <div>
-              <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Tag</label>
-              <Listbox value={tag} onChange={setTag}>
-                <div className="relative">
-                  <Listbox.Button className="relative w-full cursor-pointer rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 py-2 pl-3 pr-10 text-left text-sm text-gray-900 dark:text-white shadow-sm">
-                    <span className="block truncate">{tag || 'Select tag'}</span>
-                    <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                      <ChevronUpDownIcon className="h-5 w-5 text-gray-400" />
-                    </span>
-                  </Listbox.Button>
-                  <Transition as={Fragment} leave="transition ease-in duration-100" leaveFrom="opacity-100" leaveTo="opacity-0">
-                    <Listbox.Options className="absolute mt-1 max-h-48 w-full overflow-auto rounded-lg bg-white dark:bg-gray-700 py-1 shadow-lg ring-1 ring-black/10 z-10 text-sm">
-                      {(tags || []).map((t) => (
-                        <Listbox.Option
-                          key={t.id}
-                          value={t.name}
-                          className={({ active }) =>
-                            `relative cursor-pointer select-none py-2 pl-10 pr-4 ${
-                              active ? 'bg-primary-tint-subtle text-gray-900 dark:text-white' : 'text-gray-900 dark:text-white'
-                            }`
-                          }
-                        >
-                          {({ selected }) => (
-                            <>
-                              <span className={`block truncate ${selected ? 'font-medium' : 'font-normal'}`}>{t.name}</span>
-                              {selected && (
-                                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[var(--primary-600)]">
-                                  <CheckIcon className="h-4 w-4" />
-                                </span>
-                              )}
-                            </>
-                          )}
-                        </Listbox.Option>
-                      ))}
-                    </Listbox.Options>
-                  </Transition>
-                </div>
-              </Listbox>
-            </div>
+      {/* Panel */}
+      <div className="relative w-full max-w-sm rounded-2xl bg-white dark:bg-gray-800 shadow-xl">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-gray-100 dark:border-gray-700">
+          <h2 className="text-base font-semibold text-gray-800 dark:text-white">Edit Transaction</h2>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+          >
+            <XMarkIcon className="w-5 h-5" />
+          </button>
+        </div>
 
-            {/* Date */}
-            <div>
-              <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Date</label>
-              <DatePicker
-                selected={date}
-                onChange={setDate}
-                dateFormat="dd-MM-yyyy"
-                withPortal
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white"
-              />
-            </div>
-
-            {/* Amount */}
-            <div>
-              <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Amount</label>
-              <input
-                type="number"
-                inputMode="decimal"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white"
-                placeholder="Enter amount"
-              />
-            </div>
+        {/* Form */}
+        <div className="px-5 pt-4 pb-5 space-y-4">
+          {/* Tag */}
+          <div>
+            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Tag</label>
+            <TagSelect tags={tags || []} value={tag} onChange={setTag} />
           </div>
 
-          <div className="mt-6 flex justify-end gap-2">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 text-sm font-medium"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSubmit}
-              className="px-4 py-2 rounded-lg bg-[var(--primary-600)] text-white text-sm font-medium hover:bg-[var(--primary-700)]"
-            >
-              Save
-            </button>
+          {/* Date */}
+          <div>
+            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Date</label>
+            <DatePicker
+              selected={date}
+              onChange={setDate}
+              dateFormat="dd MMM yyyy"
+              withPortal
+              customInput={
+                <DateBtn className="w-full text-left px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200" />
+              }
+            />
           </div>
-        </Dialog.Panel>
+
+          {/* Amount */}
+          <div>
+            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Amount</label>
+            <NumPad value={amount} onChange={setAmount} placeholder="Enter amount" />
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex gap-2 px-5 pb-5">
+          <button
+            onClick={onClose}
+            className="flex-1 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 text-sm font-medium"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            className="flex-1 py-2.5 rounded-xl bg-[var(--primary-500)] active:bg-[var(--primary-600)] text-white text-sm font-medium transition-colors"
+          >
+            Save
+          </button>
+        </div>
       </div>
-    </Dialog>
+    </div>
   );
 };
 
