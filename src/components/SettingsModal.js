@@ -24,6 +24,19 @@ const LOCK_OPTIONS = [
   { label: 'Never',  value: 0  },
 ];
 
+const Toggle = ({ enabled, onToggle }) => (
+  <button
+    onClick={() => onToggle(!enabled)}
+    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none ${
+      enabled ? 'bg-[var(--primary-500)]' : 'bg-gray-300 dark:bg-gray-600'
+    }`}
+  >
+    <span className={`inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+      enabled ? 'translate-x-6' : 'translate-x-1'
+    }`} />
+  </button>
+);
+
 const SettingsModal = ({
   isOpen,
   onClose,
@@ -36,6 +49,10 @@ const SettingsModal = ({
   onInstall,
   goldPrices,
   onSaveGoldPrices,
+  showGoldBar,
+  onToggleGoldBar,
+  showExchangeBar,
+  onToggleExchangeBar,
   onSetupPin,
   onChangePin,
   onStorageChange,
@@ -197,9 +214,12 @@ const SettingsModal = ({
 
         {/* ── GOLD PRICE ── */}
         <div className="px-4 pt-5 pb-4 border-b border-gray-100 dark:border-gray-800">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-4">
-            Gold Price
-          </h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+              Gold Price
+            </h3>
+            <Toggle enabled={showGoldBar} onToggle={onToggleGoldBar} />
+          </div>
 
           <div className="space-y-3">
             {/* World gold */}
@@ -299,6 +319,19 @@ const SettingsModal = ({
               </button>
             </div>
           </div>
+        </div>
+
+        {/* ── EXCHANGE RATE ── */}
+        <div className="px-4 pt-5 pb-4 border-b border-gray-100 dark:border-gray-800">
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+              Exchange Rate
+            </h3>
+            <Toggle enabled={showExchangeBar} onToggle={onToggleExchangeBar} />
+          </div>
+          <p className="text-xs text-gray-400 dark:text-gray-500">
+            Shows live USD rates (SGD, THB, EUR, JPY…) on the home screen. Refreshes every hour.
+          </p>
         </div>
 
         {/* ── SECURITY ── */}

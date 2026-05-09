@@ -71,6 +71,8 @@ const App = () => {
   const [goldPrices, setGoldPrices]         = useState(getGoldPrices);
   const [exchangeRates, setExchangeRates]   = useState(() => getCachedRates());
   const [ratesLoading, setRatesLoading]     = useState(false);
+  const [showGoldBar, setShowGoldBar]       = useState(() => localStorage.getItem('showGoldBar') !== 'false');
+  const [showExchangeBar, setShowExchangeBar] = useState(() => localStorage.getItem('showExchangeBar') !== 'false');
   const [installPrompt, setInstallPrompt] = useState(null);
 
   // PIN / lock
@@ -151,6 +153,16 @@ const App = () => {
   const handleSaveGoldPrices = (prices) => {
     const saved = saveGoldPrices(prices);
     setGoldPrices(saved);
+  };
+
+  const handleToggleGoldBar = (val) => {
+    setShowGoldBar(val);
+    localStorage.setItem('showGoldBar', val);
+  };
+
+  const handleToggleExchangeBar = (val) => {
+    setShowExchangeBar(val);
+    localStorage.setItem('showExchangeBar', val);
   };
 
   // Fetch exchange rates on mount if cache is stale
@@ -485,18 +497,22 @@ const App = () => {
       </div>
 
       {/* Gold price bar */}
-      <GoldPriceBar
-        worldPrice={goldPrices.worldPrice}
-        myanmarPrice={goldPrices.myanmarPrice}
-        updatedAt={goldPrices.updatedAt}
-      />
+      {showGoldBar && (
+        <GoldPriceBar
+          worldPrice={goldPrices.worldPrice}
+          myanmarPrice={goldPrices.myanmarPrice}
+          updatedAt={goldPrices.updatedAt}
+        />
+      )}
 
       {/* Exchange rate bar */}
-      <ExchangeRateBar
-        rates={exchangeRates?.rates}
-        updatedAt={exchangeRates?.updatedAt}
-        loading={ratesLoading}
-      />
+      {showExchangeBar && (
+        <ExchangeRateBar
+          rates={exchangeRates?.rates}
+          updatedAt={exchangeRates?.updatedAt}
+          loading={ratesLoading}
+        />
+      )}
 
       {/* Summary cards — filtered by selected year + month */}
       <SummaryCards transactions={transactions.filter((t) => matchesFilter(t.date))} activeTab={activeTab} onTabChange={handleTabChange} />
@@ -670,6 +686,10 @@ const App = () => {
         onInstall={handleInstall}
         goldPrices={goldPrices}
         onSaveGoldPrices={handleSaveGoldPrices}
+        showGoldBar={showGoldBar}
+        onToggleGoldBar={handleToggleGoldBar}
+        showExchangeBar={showExchangeBar}
+        onToggleExchangeBar={handleToggleExchangeBar}
         onSetupPin={handleSetupPin}
         onChangePin={handleChangePin}
         onStorageChange={loadAll}
