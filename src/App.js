@@ -25,9 +25,11 @@ import NumPad from './components/NumPad';
 import { getInitialColorTheme, applyColorTheme } from './utils/colorTheme';
 import { getGoldPrices, saveGoldPrices } from './utils/goldPrice';
 import { getCachedRates, saveRates, fetchExchangeRates } from './utils/exchangeRate';
+import { getTaxSettings, saveTaxSettings } from './utils/taxCalculator';
 import { isPinEnabled, shouldLockNow, recordActivity } from './utils/pin';
 import GoldPriceBar from './components/GoldPriceBar';
 import ExchangeRateBar from './components/ExchangeRateBar';
+import TaxCard from './components/TaxCard';
 import {
   addTransaction, getTransactions, deleteTransaction, editTransaction,
   getTags, addTag, deleteTag, editTag, syncDefaultTags,
@@ -71,8 +73,9 @@ const App = () => {
   const [goldPrices, setGoldPrices]         = useState(getGoldPrices);
   const [exchangeRates, setExchangeRates]   = useState(() => getCachedRates());
   const [ratesLoading, setRatesLoading]     = useState(false);
-  const [showGoldBar, setShowGoldBar]       = useState(() => localStorage.getItem('showGoldBar') !== 'false');
+  const [showGoldBar, setShowGoldBar]         = useState(() => localStorage.getItem('showGoldBar') !== 'false');
   const [showExchangeBar, setShowExchangeBar] = useState(() => localStorage.getItem('showExchangeBar') !== 'false');
+  const [taxSettings, setTaxSettings]         = useState(getTaxSettings);
   const [installPrompt, setInstallPrompt] = useState(null);
 
   // PIN / lock
@@ -163,6 +166,11 @@ const App = () => {
   const handleToggleExchangeBar = (val) => {
     setShowExchangeBar(val);
     localStorage.setItem('showExchangeBar', val);
+  };
+
+  const handleTaxSettingsChange = (updated) => {
+    const saved = saveTaxSettings(updated);
+    setTaxSettings(saved);
   };
 
   // Fetch exchange rates on mount if cache is stale
@@ -556,6 +564,16 @@ const App = () => {
               </div>
             </div>
 
+            {/* Tax card — income tab only */}
+            {activeTab === 'income' && taxSettings.enabled && (
+              <div className="mb-3">
+                <TaxCard
+                  monthlyIncome={transactions.filter((t) => matchesFilter(t.date) && t.type === 'income').reduce((s, t) => s + parseFloat(t.amount || 0), 0)}
+                  country={taxSettings.country}
+                />
+              </div>
+            )}
+
             {/* Filter + records */}
             <div className="bg-white dark:bg-gray-900 rounded-xl p-3 shadow-sm">
               <Filter
@@ -690,6 +708,8 @@ const App = () => {
         onToggleGoldBar={handleToggleGoldBar}
         showExchangeBar={showExchangeBar}
         onToggleExchangeBar={handleToggleExchangeBar}
+        taxSettings={taxSettings}
+        onTaxSettingsChange={handleTaxSettingsChange}
         onSetupPin={handleSetupPin}
         onChangePin={handleChangePin}
         onStorageChange={loadAll}

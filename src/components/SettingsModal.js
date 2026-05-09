@@ -15,6 +15,7 @@ import { ChevronRightIcon } from '@heroicons/react/20/solid';
 import { COLOR_THEMES } from '../utils/colorTheme';
 import { getGoldApiKey, saveGoldApiKey, fetchWorldGoldPrice } from '../utils/goldPrice';
 import { isPinEnabled, getLockTimeout, setLockTimeout, disablePin } from '../utils/pin';
+import { TAX_COUNTRIES } from '../utils/taxCalculator';
 import { STORAGE_OPTIONS, getStorageType, setStorageType } from '../db';
 
 const LOCK_OPTIONS = [
@@ -53,6 +54,8 @@ const SettingsModal = ({
   onToggleGoldBar,
   showExchangeBar,
   onToggleExchangeBar,
+  taxSettings,
+  onTaxSettingsChange,
   onSetupPin,
   onChangePin,
   onStorageChange,
@@ -332,6 +335,53 @@ const SettingsModal = ({
           <p className="text-xs text-gray-400 dark:text-gray-500">
             Shows live USD rates (SGD, THB, EUR, JPY…) on the home screen. Refreshes every hour.
           </p>
+        </div>
+
+        {/* ── ADD-ONS ── */}
+        <div className="px-4 pt-5 pb-4 border-b border-gray-100 dark:border-gray-800">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-4">
+            Add-ons
+          </h3>
+
+          {/* Tax calculator */}
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-1">
+              <div>
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-200">Income Tax Calculator</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500">Shows monthly tax estimate on home screen</p>
+              </div>
+              <Toggle
+                enabled={taxSettings?.enabled}
+                onToggle={(val) => onTaxSettingsChange({ ...taxSettings, enabled: val })}
+              />
+            </div>
+
+            {/* Country picker — shown only when enabled */}
+            {taxSettings?.enabled && (
+              <div className="mt-3">
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Tax Country</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {TAX_COUNTRIES.map((c) => {
+                    const active = taxSettings.country === c.code;
+                    return (
+                      <button
+                        key={c.code}
+                        onClick={() => onTaxSettingsChange({ ...taxSettings, country: c.code })}
+                        className={`flex flex-col items-center gap-1 py-2.5 rounded-xl border-2 transition-all text-xs font-medium ${
+                          active
+                            ? 'border-[var(--primary-500)] bg-[var(--primary-50)] dark:bg-[var(--primary-900)]/30 text-[var(--primary-600)] dark:text-[var(--primary-400)]'
+                            : 'border-transparent bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                        }`}
+                      >
+                        <span className="text-lg">{c.flag}</span>
+                        <span>{c.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* ── SECURITY ── */}
