@@ -98,7 +98,6 @@ const TagsManagementModal = ({ isOpen, onClose, allTags, onAdd, onDelete, onEdit
                     onChange={(e) => setEditingName(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && saveEdit(tag)}
                     className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    autoFocus
                   />
                   <button onClick={() => saveEdit(tag)} className="p-1 text-green-500 hover:text-green-600">
                     <CheckIcon className="w-4 h-4" />
