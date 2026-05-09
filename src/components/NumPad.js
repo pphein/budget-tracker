@@ -55,8 +55,8 @@ const NumPad = ({ value, onChange, placeholder = 'Amount' }) => {
             </div>
 
             {/* Amount display */}
-            <div className="px-6 pt-2 pb-4 text-right border-b border-gray-100 dark:border-gray-800">
-              <span className={`text-4xl font-light tracking-wide ${value ? 'text-gray-800 dark:text-white' : 'text-gray-300 dark:text-gray-600'}`}>
+            <div className="px-5 pt-1 pb-3 text-right border-b border-gray-100 dark:border-gray-800">
+              <span className={`text-3xl font-light tracking-wide ${value ? 'text-gray-800 dark:text-white' : 'text-gray-300 dark:text-gray-600'}`}>
                 {value || '0'}
               </span>
             </div>
@@ -68,10 +68,10 @@ const NumPad = ({ value, onChange, placeholder = 'Amount' }) => {
                   key={key}
                   type="button"
                   onClick={() => handleKey(key)}
-                  className="flex items-center justify-center py-5 text-xl font-medium text-gray-800 dark:text-white active:bg-gray-100 dark:active:bg-gray-800 transition-colors border-b border-r border-gray-100 dark:border-gray-800"
+                  className="flex items-center justify-center py-3.5 text-lg font-medium text-gray-800 dark:text-white active:bg-gray-100 dark:active:bg-gray-800 transition-colors border-b border-r border-gray-100 dark:border-gray-800"
                 >
                   {key === '⌫' ? (
-                    <BackspaceIcon className="w-6 h-6 text-gray-500 dark:text-gray-400" />
+                    <BackspaceIcon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                   ) : (
                     key
                   )}
@@ -80,11 +80,11 @@ const NumPad = ({ value, onChange, placeholder = 'Amount' }) => {
             </div>
 
             {/* Done */}
-            <div className="p-4 pb-8">
+            <div className="p-3 pb-6">
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="w-full py-3.5 rounded-xl bg-[var(--primary-500)] active:bg-[var(--primary-600)] text-white font-semibold text-base transition-colors"
+                className="w-full py-3 rounded-xl bg-[var(--primary-500)] active:bg-[var(--primary-600)] text-white font-semibold text-sm transition-colors"
               >
                 Done
               </button>
