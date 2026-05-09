@@ -24,8 +24,10 @@ import TagSelect from './components/TagSelect';
 import NumPad from './components/NumPad';
 import { getInitialColorTheme, applyColorTheme } from './utils/colorTheme';
 import { getGoldPrices, saveGoldPrices } from './utils/goldPrice';
+import { getCachedRates, saveRates, fetchExchangeRates } from './utils/exchangeRate';
 import { isPinEnabled, shouldLockNow, recordActivity } from './utils/pin';
 import GoldPriceBar from './components/GoldPriceBar';
+import ExchangeRateBar from './components/ExchangeRateBar';
 import {
   addTransaction, getTransactions, deleteTransaction, editTransaction,
   getTags, addTag, deleteTag, editTag, syncDefaultTags,
@@ -66,7 +68,9 @@ const App = () => {
   const [loading, setLoading]           = useState(true);
   const [theme, setTheme]               = useState(getInitialTheme);
   const [colorTheme, setColorTheme]     = useState(getInitialColorTheme);
-  const [goldPrices, setGoldPrices]     = useState(getGoldPrices);
+  const [goldPrices, setGoldPrices]         = useState(getGoldPrices);
+  const [exchangeRates, setExchangeRates]   = useState(() => getCachedRates());
+  const [ratesLoading, setRatesLoading]     = useState(false);
   const [installPrompt, setInstallPrompt] = useState(null);
 
   // PIN / lock
@@ -148,6 +152,16 @@ const App = () => {
     const saved = saveGoldPrices(prices);
     setGoldPrices(saved);
   };
+
+  // Fetch exchange rates on mount if cache is stale
+  useEffect(() => {
+    if (getCachedRates()) return; // already fresh
+    setRatesLoading(true);
+    fetchExchangeRates()
+      .then((rates) => setExchangeRates(saveRates(rates)))
+      .catch(console.error)
+      .finally(() => setRatesLoading(false));
+  }, []);
 
   const toggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
 
@@ -475,6 +489,13 @@ const App = () => {
         worldPrice={goldPrices.worldPrice}
         myanmarPrice={goldPrices.myanmarPrice}
         updatedAt={goldPrices.updatedAt}
+      />
+
+      {/* Exchange rate bar */}
+      <ExchangeRateBar
+        rates={exchangeRates?.rates}
+        updatedAt={exchangeRates?.updatedAt}
+        loading={ratesLoading}
       />
 
       {/* Summary cards — filtered by selected year + month */}
