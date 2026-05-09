@@ -38,7 +38,7 @@ const TagSelect = ({ tags, value, onChange, placeholder = 'Select a tag…' }) =
 
       {/* Bottom-sheet modal */}
       {open && (
-        <div className="fixed inset-0 z-40 flex flex-col justify-end">
+        <div className="fixed inset-0 z-40 flex items-center justify-center px-4">
           {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/40"
@@ -46,14 +46,9 @@ const TagSelect = ({ tags, value, onChange, placeholder = 'Select a tag…' }) =
           />
 
           {/* Sheet */}
-          <div className="relative bg-white dark:bg-gray-900 rounded-t-2xl flex flex-col max-h-[72vh]">
-            {/* Drag handle */}
-            <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
-              <div className="w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
-            </div>
-
+          <div className="relative bg-white dark:bg-gray-900 rounded-2xl flex flex-col w-full max-w-sm max-h-[72vh]">
             {/* Header */}
-            <div className="flex items-center justify-between px-4 pb-3 flex-shrink-0">
+            <div className="flex items-center justify-between px-4 pt-4 pb-3 flex-shrink-0">
               <h3 className="text-base font-semibold text-gray-800 dark:text-white">Select Tag</h3>
               <button
                 onClick={() => setOpen(false)}
