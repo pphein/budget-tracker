@@ -1,14 +1,11 @@
 import React, { useState } from 'react';
-import { MagnifyingGlassIcon, ChevronDownIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { ChevronDownIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { CheckIcon } from '@heroicons/react/20/solid';
 import { getTagColorClasses } from '../utils/tagColors';
 
 // Multi-select tag filter — opens a bottom-sheet modal with a tag grid
 const Filter = ({ tags, allTags, selectedTags, setSelectedTags }) => {
-  const [open, setOpen]     = useState(false);
-  const [search, setSearch] = useState('');
-
-  const filtered = tags.filter((t) => t.name.toLowerCase().includes(search.toLowerCase()));
+  const [open, setOpen] = useState(false);
 
   const toggle = (name) =>
     setSelectedTags((prev) =>
@@ -20,14 +17,14 @@ const Filter = ({ tags, allTags, selectedTags, setSelectedTags }) => {
     return found ? getTagColorClasses(found.colorIndex) : null;
   };
 
-  const handleClose = () => { setOpen(false); setSearch(''); };
+  const handleClose = () => setOpen(false);
 
   return (
     <div className="mb-3">
       {/* Trigger */}
       <button
         type="button"
-        onClick={() => { setOpen(true); setSearch(''); }}
+        onClick={() => setOpen(true)}
         className="w-full flex items-center gap-2 min-h-[40px] px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-left"
       >
         {selectedTags.length === 0 ? (
@@ -78,25 +75,10 @@ const Filter = ({ tags, allTags, selectedTags, setSelectedTags }) => {
               </button>
             </div>
 
-            {/* Search */}
-            <div className="px-4 pb-3 flex-shrink-0">
-              <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-800 rounded-xl">
-                <MagnifyingGlassIcon className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                <input
-                  autoFocus
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search tags…"
-                  className="flex-1 text-sm bg-transparent outline-none text-gray-800 dark:text-gray-200 placeholder-gray-400"
-                />
-              </div>
-            </div>
-
             {/* Tag grid */}
             <div className="flex-1 overflow-y-auto px-4 pb-6">
               {/* All Tags chip */}
-              {!search && (
-                <button
+              <button
                   type="button"
                   onClick={() => setSelectedTags([])}
                   className={`relative w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl mb-3 text-sm font-medium transition-all ${
@@ -110,13 +92,12 @@ const Filter = ({ tags, allTags, selectedTags, setSelectedTags }) => {
                   )}
                   <span className="text-gray-700 dark:text-gray-200">All Tags</span>
                 </button>
-              )}
 
-              {filtered.length === 0 ? (
+              {tags.length === 0 ? (
                 <p className="text-center text-gray-400 dark:text-gray-500 py-8 text-sm">No tags found</p>
               ) : (
                 <div className="grid grid-cols-3 gap-2">
-                  {filtered.map((t) => {
+                  {tags.map((t) => {
                     const c   = getTagColorClasses(t.colorIndex);
                     const sel = selectedTags.includes(t.name);
                     return (

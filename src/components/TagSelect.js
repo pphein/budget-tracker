@@ -1,21 +1,18 @@
 import React, { useState } from 'react';
-import { XMarkIcon, MagnifyingGlassIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { CheckIcon } from '@heroicons/react/20/solid';
 import { getTagColorClasses } from '../utils/tagColors';
 
 // Single-select tag picker — opens a bottom-sheet modal with a tag grid
 const TagSelect = ({ tags, value, onChange, placeholder = 'Select a tag…' }) => {
-  const [open, setOpen]     = useState(false);
-  const [search, setSearch] = useState('');
+  const [open, setOpen] = useState(false);
 
   const selected      = tags.find((t) => t.name === value);
   const selectedColor = selected ? getTagColorClasses(selected.colorIndex) : null;
-  const filtered      = tags.filter((t) => t.name.toLowerCase().includes(search.toLowerCase()));
 
   const handleSelect = (tagName) => {
     onChange(tagName);
     setOpen(false);
-    setSearch('');
   };
 
   return (
@@ -23,7 +20,7 @@ const TagSelect = ({ tags, value, onChange, placeholder = 'Select a tag…' }) =
       {/* Trigger */}
       <button
         type="button"
-        onClick={() => { setOpen(true); setSearch(''); }}
+        onClick={() => setOpen(true)}
         className="relative w-full cursor-pointer rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 py-2.5 pl-3 pr-10 text-left text-sm"
       >
         {selected && selectedColor ? (
@@ -45,7 +42,7 @@ const TagSelect = ({ tags, value, onChange, placeholder = 'Select a tag…' }) =
           {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/40"
-            onClick={() => { setOpen(false); setSearch(''); }}
+            onClick={() => setOpen(false)}
           />
 
           {/* Sheet */}
@@ -59,34 +56,20 @@ const TagSelect = ({ tags, value, onChange, placeholder = 'Select a tag…' }) =
             <div className="flex items-center justify-between px-4 pb-3 flex-shrink-0">
               <h3 className="text-base font-semibold text-gray-800 dark:text-white">Select Tag</h3>
               <button
-                onClick={() => { setOpen(false); setSearch(''); }}
+                onClick={() => setOpen(false)}
                 className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
               >
                 <XMarkIcon className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Search */}
-            <div className="px-4 pb-3 flex-shrink-0">
-              <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-800 rounded-xl">
-                <MagnifyingGlassIcon className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                <input
-                  autoFocus
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search tags…"
-                  className="flex-1 text-sm bg-transparent outline-none text-gray-800 dark:text-gray-200 placeholder-gray-400"
-                />
-              </div>
-            </div>
-
             {/* Tag grid */}
             <div className="flex-1 overflow-y-auto px-4 pb-6">
-              {filtered.length === 0 ? (
+              {tags.length === 0 ? (
                 <p className="text-center text-gray-400 dark:text-gray-500 py-8 text-sm">No tags found</p>
               ) : (
                 <div className="grid grid-cols-3 gap-2">
-                  {filtered.map((t) => {
+                  {tags.map((t) => {
                     const c   = getTagColorClasses(t.colorIndex);
                     const sel = t.name === value;
                     return (
