@@ -10,13 +10,9 @@ const getCache = () => {
   }
 };
 
-const setCache = (cache) => {
-  localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
-};
+const setCache = (cache) => localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
 
-export const getCachedExchangeHistory = (currency) => {
-  return getCache()[currency] || {};
-};
+export const getCachedExchangeHistory = (currency) => getCache()[currency] || {};
 
 export const setCachedExchangeMonths = (currency, monthlyRates) => {
   const cache = getCache();
@@ -24,34 +20,44 @@ export const setCachedExchangeMonths = (currency, monthlyRates) => {
   setCache(cache);
 };
 
-// Currencies supported by frankfurter.app (free, no key required)
+// Uses @fawazahmed0/currency-api via jsDelivr CDN — free, no API key, supports 150+ currencies
+// Docs: https://github.com/fawazahmed0/exchange-api
 export const CHART_CURRENCIES = [
-  { code: 'SGD', flag: '🇸🇬', label: 'SGD' },
-  { code: 'THB', flag: '🇹🇭', label: 'THB' },
-  { code: 'EUR', flag: '🇪🇺', label: 'EUR' },
-  { code: 'GBP', flag: '🇬🇧', label: 'GBP' },
-  { code: 'JPY', flag: '🇯🇵', label: 'JPY' },
-  { code: 'CNY', flag: '🇨🇳', label: 'CNY' },
-  { code: 'AUD', flag: '🇦🇺', label: 'AUD' },
+  { code: 'SGD', flag: '🇸🇬' },
+  { code: 'THB', flag: '🇹🇭' },
+  { code: 'MMK', flag: '🇲🇲' },
+  { code: 'EUR', flag: '🇪🇺' },
+  { code: 'GBP', flag: '🇬🇧' },
+  { code: 'JPY', flag: '🇯🇵' },
+  { code: 'CNY', flag: '🇨🇳' },
+  { code: 'AUD', flag: '🇦🇺' },
 ];
 
-// Fetches daily rates for a date range and picks the first available date per month.
+// Fetches rates for an array of 'YYYY-MM' months in parallel.
 // Returns { 'YYYY-MM': rate }
-export const fetchExchangeHistory = async (toCurrency, startYearMonth) => {
-  const startDate = startYearMonth + '-01';
-  const endDate   = new Date().toISOString().slice(0, 10);
+export const fetchExchangeHistory = async (toCurrency, months) => {
+  const key = toCurrency.toLowerCase();
 
-  const res = await fetch(
-    `https://api.frankfurter.app/${startDate}..${endDate}?from=USD&to=${toCurrency}`
+  const results = await Promise.all(
+    months.map(async (yearMonth) => {
+      try {
+        const date = yearMonth + '-01';
+        const res  = await fetch(
+          `https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@${date}/v1/currencies/usd.json`
+        );
+        if (!res.ok) return null;
+        const data = await res.json();
+        const rate = data?.usd?.[key];
+        return rate != null ? { month: yearMonth, rate } : null;
+      } catch {
+        return null;
+      }
+    })
   );
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const data = await res.json();
 
-  // data.rates: { '2024-01-02': { SGD: 1.34 }, ... }
   const monthly = {};
-  for (const [date, rates] of Object.entries(data.rates || {})) {
-    const month = date.slice(0, 7);
-    if (!monthly[month]) monthly[month] = rates[toCurrency];
+  for (const r of results) {
+    if (r) monthly[r.month] = r.rate;
   }
   return monthly;
 };

@@ -37,9 +37,7 @@ const ExchangeRateChart = () => {
 
     if (missing.length > 0) {
       try {
-        // Fetch all missing months in one request using the earliest missing month as start
-        const earliest = missing[0];
-        const fetched  = await fetchExchangeHistory(cur, earliest);
+        const fetched = await fetchExchangeHistory(cur, missing);
         setCachedExchangeMonths(cur, fetched);
         history = { ...history, ...fetched };
       } catch (e) {
