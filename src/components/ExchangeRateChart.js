@@ -17,58 +17,73 @@ const RANGES = [
   { label: '12M', value: 12 },
 ];
 
+const COLORS = ['#3b82f6','#8b5cf6','#ec4899','#f59e0b','#10b981','#ef4444','#06b6d4','#f97316'];
+
 const fmtFull = (v) => new Intl.NumberFormat('en-US', { maximumFractionDigits: 4 }).format(v);
 
 const ExchangeRateChart = () => {
-  const [currency, setCurrency] = useState('SGD');
-  const [range, setRange]       = useState(6);
-  const [data, setData]         = useState([]);
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState('');
+  const [currencies, setCurrencies] = useState(['SGD']);
+  const [range, setRange]           = useState(6);
+  const [data, setData]             = useState([]);
+  const [loading, setLoading]       = useState(false);
+  const [error, setError]           = useState('');
 
-  const load = useCallback(async (cur, months) => {
+  const toggleCurrency = (code) => {
+    setCurrencies((prev) =>
+      prev.includes(code)
+        ? prev.length > 1 ? prev.filter((c) => c !== code) : prev
+        : [...prev, code]
+    );
+  };
+
+  const load = useCallback(async (curs, months) => {
     setLoading(true);
     setError('');
 
-    const cached  = getCachedExchangeHistory(cur);
-    const missing = months.filter((m) => !cached[m]);
+    const allHistory = {};
+    const results = await Promise.allSettled(
+      curs.map(async (cur) => {
+        const cached  = getCachedExchangeHistory(cur);
+        const missing = months.filter((m) => !cached[m]);
+        let history   = { ...cached };
+        if (missing.length > 0) {
+          const fetched = await fetchExchangeHistory(cur, missing);
+          setCachedExchangeMonths(cur, fetched);
+          history = { ...history, ...fetched };
+        }
+        allHistory[cur] = history;
+      })
+    );
 
-    let history = { ...cached };
-
-    if (missing.length > 0) {
-      try {
-        const fetched = await fetchExchangeHistory(cur, missing);
-        setCachedExchangeMonths(cur, fetched);
-        history = { ...history, ...fetched };
-      } catch (e) {
-        setError('Failed to load exchange rate data. Please try again.');
-        setLoading(false);
-        return;
-      }
+    if (results.every((r) => r.status === 'rejected')) {
+      setError('Failed to load exchange rate data. Please try again.');
+      setLoading(false);
+      return;
     }
 
     const chartData = months
-      .filter((m) => history[m])
-      .map((m) => ({
-        label: new Date(m + '-01').toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
-        rate:  history[m],
-      }));
+      .filter((m) => curs.some((cur) => allHistory[cur]?.[m]))
+      .map((m) => {
+        const point = {
+          label: new Date(m + '-01').toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
+        };
+        curs.forEach((cur) => {
+          if (allHistory[cur]?.[m]) point[cur] = allHistory[cur][m];
+        });
+        return point;
+      });
 
     setData(chartData);
     setLoading(false);
   }, []);
 
   useEffect(() => {
-    load(currency, getPastMonths(range));
-  }, [currency, range, load]);
+    load(currencies, getPastMonths(range));
+  }, [currencies, range, load]);
 
-  const minRate = data.length ? Math.min(...data.map((d) => d.rate)) : 0;
-  const maxRate = data.length ? Math.max(...data.map((d) => d.rate)) : 0;
-  const domain  = data.length
-    ? [parseFloat((minRate * 0.995).toFixed(4)), parseFloat((maxRate * 1.005).toFixed(4))]
-    : ['auto', 'auto'];
-
-  const currencyInfo = CHART_CURRENCIES.find((c) => c.code === currency);
+  const allValues = data.flatMap((d) => currencies.map((cur) => d[cur]).filter((v) => v != null));
+  const minRate   = allValues.length ? Math.min(...allValues) : 0;
+  const maxRate   = allValues.length ? Math.max(...allValues) : 0;
 
   return (
     <div className="px-2 sm:px-4 max-w-6xl mx-auto mt-2">
@@ -103,22 +118,27 @@ const ExchangeRateChart = () => {
           </div>
         </div>
 
-        {/* Currency tabs */}
+        {/* Currency tabs — multi-select */}
         <div className="flex gap-1.5 overflow-x-auto scrollbar-hide mb-3 pb-0.5">
-          {CHART_CURRENCIES.map(({ code, flag }) => (
-            <button
-              key={code}
-              onClick={() => setCurrency(code)}
-              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium flex-shrink-0 transition-colors ${
-                currency === code
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 active:bg-gray-200 dark:active:bg-gray-700'
-              }`}
-            >
-              <span>{flag}</span>
-              <span>{code}</span>
-            </button>
-          ))}
+          {CHART_CURRENCIES.map(({ code, flag }, idx) => {
+            const selected = currencies.includes(code);
+            const color    = COLORS[idx % COLORS.length];
+            return (
+              <button
+                key={code}
+                onClick={() => toggleCurrency(code)}
+                style={selected ? { backgroundColor: color, borderColor: color } : {}}
+                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium flex-shrink-0 transition-colors border ${
+                  selected
+                    ? 'text-white border-transparent'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-transparent active:bg-gray-200 dark:active:bg-gray-700'
+                }`}
+              >
+                <span>{flag}</span>
+                <span>{code}</span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Chart body */}
@@ -141,32 +161,55 @@ const ExchangeRateChart = () => {
                     tick={{ fontSize: 10 }}
                     width={52}
                     tickFormatter={(v) => v.toFixed(2)}
-                    domain={domain}
+                    domain={['auto', 'auto']}
                   />
                   <Tooltip
-                    formatter={(v) => [`${fmtFull(v)} ${currency}`, '1 USD']}
+                    formatter={(v, name) => {
+                      const info = CHART_CURRENCIES.find((c) => c.code === name);
+                      return [`${fmtFull(v)} ${name}`, `${info?.flag || ''} 1 USD`];
+                    }}
                     contentStyle={{ fontSize: 12 }}
                   />
-                  <Line
-                    type="monotone"
-                    dataKey="rate"
-                    stroke="#3b82f6"
-                    strokeWidth={2.5}
-                    dot={{ r: 3, fill: '#3b82f6', strokeWidth: 0 }}
-                    activeDot={{ r: 5 }}
-                  />
+                  {currencies.map((cur) => {
+                    const idx   = CHART_CURRENCIES.findIndex((c) => c.code === cur);
+                    const color = COLORS[idx % COLORS.length];
+                    return (
+                      <Line
+                        key={cur}
+                        type="monotone"
+                        dataKey={cur}
+                        stroke={color}
+                        strokeWidth={2.5}
+                        dot={{ r: 3, fill: color, strokeWidth: 0 }}
+                        activeDot={{ r: 5 }}
+                        connectNulls
+                      />
+                    );
+                  })}
                 </LineChart>
               </ResponsiveContainer>
             </div>
 
-            {/* Min / Max */}
-            <div className="flex justify-between mt-2 text-xs text-gray-400 dark:text-gray-500">
-              <span>
-                Low: <span className="font-medium text-gray-600 dark:text-gray-300">{fmtFull(minRate)} {currencyInfo?.flag}</span>
-              </span>
-              <span>
-                High: <span className="font-medium text-gray-600 dark:text-gray-300">{fmtFull(maxRate)} {currencyInfo?.flag}</span>
-              </span>
+            {/* Min / Max per currency */}
+            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
+              {currencies.map((cur) => {
+                const vals    = data.map((d) => d[cur]).filter((v) => v != null);
+                const lo      = vals.length ? Math.min(...vals) : null;
+                const hi      = vals.length ? Math.max(...vals) : null;
+                const info    = CHART_CURRENCIES.find((c) => c.code === cur);
+                const idx     = CHART_CURRENCIES.findIndex((c) => c.code === cur);
+                const color   = COLORS[idx % COLORS.length];
+                if (lo == null) return null;
+                return (
+                  <div key={cur} className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500">
+                    <span className="inline-block w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+                    <span>{info?.flag} {cur}:</span>
+                    <span className="font-medium text-gray-600 dark:text-gray-300">{fmtFull(lo)}</span>
+                    <span>–</span>
+                    <span className="font-medium text-gray-600 dark:text-gray-300">{fmtFull(hi)}</span>
+                  </div>
+                );
+              })}
             </div>
           </>
         )}
