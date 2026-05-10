@@ -56,6 +56,8 @@ const SettingsModal = ({
   onToggleExchangeBar,
   showGoldChart,
   onToggleGoldChart,
+  showExchangeChart,
+  onToggleExchangeChart,
   taxSettings,
   onTaxSettingsChange,
   onSetupPin,
@@ -352,6 +354,15 @@ const SettingsModal = ({
               <p className="text-xs text-gray-400 dark:text-gray-500">Monthly trend chart (requires goldapi.io key)</p>
             </div>
             <Toggle enabled={showGoldChart} onToggle={onToggleGoldChart} />
+          </div>
+
+          {/* Exchange rate chart */}
+          <div className="flex items-center justify-between py-2 mb-4 border-b border-gray-100 dark:border-gray-800">
+            <div>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-200">Dollar Rate Chart</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">Monthly USD rate trend (SGD, THB, EUR…)</p>
+            </div>
+            <Toggle enabled={showExchangeChart} onToggle={onToggleExchangeChart} />
           </div>
 
           {/* Tax calculator */}

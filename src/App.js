@@ -30,6 +30,7 @@ import { isPinEnabled, shouldLockNow, recordActivity } from './utils/pin';
 import GoldPriceBar from './components/GoldPriceBar';
 import ExchangeRateBar from './components/ExchangeRateBar';
 import GoldPriceChart from './components/GoldPriceChart';
+import ExchangeRateChart from './components/ExchangeRateChart';
 import TaxCard from './components/TaxCard';
 import {
   addTransaction, getTransactions, deleteTransaction, editTransaction,
@@ -76,7 +77,8 @@ const App = () => {
   const [ratesLoading, setRatesLoading]     = useState(false);
   const [showGoldBar, setShowGoldBar]         = useState(() => localStorage.getItem('showGoldBar') !== 'false');
   const [showExchangeBar, setShowExchangeBar] = useState(() => localStorage.getItem('showExchangeBar') !== 'false');
-  const [showGoldChart, setShowGoldChart]     = useState(() => localStorage.getItem('showGoldChart') === 'true');
+  const [showGoldChart, setShowGoldChart]         = useState(() => localStorage.getItem('showGoldChart') === 'true');
+  const [showExchangeChart, setShowExchangeChart] = useState(() => localStorage.getItem('showExchangeChart') === 'true');
   const [taxSettings, setTaxSettings]         = useState(getTaxSettings);
   const [installPrompt, setInstallPrompt] = useState(null);
 
@@ -173,6 +175,11 @@ const App = () => {
   const handleToggleGoldChart = (val) => {
     setShowGoldChart(val);
     localStorage.setItem('showGoldChart', val);
+  };
+
+  const handleToggleExchangeChart = (val) => {
+    setShowExchangeChart(val);
+    localStorage.setItem('showExchangeChart', val);
   };
 
   const handleTaxSettingsChange = (updated) => {
@@ -532,6 +539,9 @@ const App = () => {
       {/* Gold price chart */}
       {showGoldChart && <GoldPriceChart />}
 
+      {/* Exchange rate chart */}
+      {showExchangeChart && <ExchangeRateChart />}
+
       {/* Summary cards — filtered by selected year + month */}
       <SummaryCards transactions={transactions.filter((t) => matchesFilter(t.date))} activeTab={activeTab} onTabChange={handleTabChange} />
 
@@ -720,6 +730,8 @@ const App = () => {
         onToggleExchangeBar={handleToggleExchangeBar}
         showGoldChart={showGoldChart}
         onToggleGoldChart={handleToggleGoldChart}
+        showExchangeChart={showExchangeChart}
+        onToggleExchangeChart={handleToggleExchangeChart}
         taxSettings={taxSettings}
         onTaxSettingsChange={handleTaxSettingsChange}
         onSetupPin={handleSetupPin}
