@@ -82,8 +82,8 @@ const ExchangeRateChart = () => {
   }, [currencies, range, load]);
 
   const allValues = data.flatMap((d) => currencies.map((cur) => d[cur]).filter((v) => v != null));
-  const minRate   = allValues.length ? Math.min(...allValues) : 0;
-  const maxRate   = allValues.length ? Math.max(...allValues) : 0;
+  // const minRate   = allValues.length ? Math.min(...allValues) : 0;
+  // const maxRate   = allValues.length ? Math.max(...allValues) : 0;
 
   return (
     <div className="px-2 sm:px-4 max-w-6xl mx-auto mt-2">
