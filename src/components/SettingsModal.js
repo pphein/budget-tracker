@@ -54,6 +54,8 @@ const SettingsModal = ({
   onToggleGoldBar,
   showExchangeBar,
   onToggleExchangeBar,
+  showGoldChart,
+  onToggleGoldChart,
   taxSettings,
   onTaxSettingsChange,
   onSetupPin,
@@ -342,6 +344,15 @@ const SettingsModal = ({
           <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-4">
             Add-ons
           </h3>
+
+          {/* Gold price chart */}
+          <div className="flex items-center justify-between py-2 mb-4 border-b border-gray-100 dark:border-gray-800">
+            <div>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-200">Gold Price Chart</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">Monthly trend chart (requires goldapi.io key)</p>
+            </div>
+            <Toggle enabled={showGoldChart} onToggle={onToggleGoldChart} />
+          </div>
 
           {/* Tax calculator */}
           <div className="mb-4">

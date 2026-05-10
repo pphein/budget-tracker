@@ -29,6 +29,7 @@ import { getTaxSettings, saveTaxSettings } from './utils/taxCalculator';
 import { isPinEnabled, shouldLockNow, recordActivity } from './utils/pin';
 import GoldPriceBar from './components/GoldPriceBar';
 import ExchangeRateBar from './components/ExchangeRateBar';
+import GoldPriceChart from './components/GoldPriceChart';
 import TaxCard from './components/TaxCard';
 import {
   addTransaction, getTransactions, deleteTransaction, editTransaction,
@@ -75,6 +76,7 @@ const App = () => {
   const [ratesLoading, setRatesLoading]     = useState(false);
   const [showGoldBar, setShowGoldBar]         = useState(() => localStorage.getItem('showGoldBar') !== 'false');
   const [showExchangeBar, setShowExchangeBar] = useState(() => localStorage.getItem('showExchangeBar') !== 'false');
+  const [showGoldChart, setShowGoldChart]     = useState(() => localStorage.getItem('showGoldChart') === 'true');
   const [taxSettings, setTaxSettings]         = useState(getTaxSettings);
   const [installPrompt, setInstallPrompt] = useState(null);
 
@@ -166,6 +168,11 @@ const App = () => {
   const handleToggleExchangeBar = (val) => {
     setShowExchangeBar(val);
     localStorage.setItem('showExchangeBar', val);
+  };
+
+  const handleToggleGoldChart = (val) => {
+    setShowGoldChart(val);
+    localStorage.setItem('showGoldChart', val);
   };
 
   const handleTaxSettingsChange = (updated) => {
@@ -522,6 +529,9 @@ const App = () => {
         />
       )}
 
+      {/* Gold price chart */}
+      {showGoldChart && <GoldPriceChart />}
+
       {/* Summary cards — filtered by selected year + month */}
       <SummaryCards transactions={transactions.filter((t) => matchesFilter(t.date))} activeTab={activeTab} onTabChange={handleTabChange} />
 
@@ -708,6 +718,8 @@ const App = () => {
         onToggleGoldBar={handleToggleGoldBar}
         showExchangeBar={showExchangeBar}
         onToggleExchangeBar={handleToggleExchangeBar}
+        showGoldChart={showGoldChart}
+        onToggleGoldChart={handleToggleGoldChart}
         taxSettings={taxSettings}
         onTaxSettingsChange={handleTaxSettingsChange}
         onSetupPin={handleSetupPin}
