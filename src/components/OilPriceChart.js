@@ -4,7 +4,6 @@ import {
 } from 'recharts';
 import { ArrowPathIcon } from '@heroicons/react/24/outline';
 import {
-  getAlphaVantageKey,
   getCachedOilHistory,
   setCachedOilHistory,
   fetchOilPrices,
@@ -31,13 +30,6 @@ const OilPriceChart = () => {
   const [error, setError]   = useState('');
 
   const load = useCallback(async (t, months) => {
-    const apiKey = getAlphaVantageKey();
-    if (!apiKey) {
-      setError('Add your Alpha Vantage API key in Settings → Add-ons to load oil prices.');
-      setData([]);
-      return;
-    }
-
     setLoading(true);
     setError('');
 
@@ -45,7 +37,7 @@ const OilPriceChart = () => {
 
     if (!history) {
       try {
-        history = await fetchOilPrices(apiKey, t);
+        history = await fetchOilPrices(t);
         setCachedOilHistory(t, history);
       } catch (e) {
         setError(e.message || 'Failed to load oil price data.');
