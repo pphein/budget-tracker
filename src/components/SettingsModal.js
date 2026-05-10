@@ -16,6 +16,7 @@ import { COLOR_THEMES } from '../utils/colorTheme';
 import { getGoldApiKey, saveGoldApiKey, fetchWorldGoldPrice } from '../utils/goldPrice';
 import { isPinEnabled, getLockTimeout, setLockTimeout, disablePin } from '../utils/pin';
 import { TAX_COUNTRIES } from '../utils/taxCalculator';
+import { getAlphaVantageKey, saveAlphaVantageKey } from '../utils/oilPrice';
 import { STORAGE_OPTIONS, getStorageType, setStorageType } from '../db';
 
 const LOCK_OPTIONS = [
@@ -58,6 +59,8 @@ const SettingsModal = ({
   onToggleGoldChart,
   showExchangeChart,
   onToggleExchangeChart,
+  showOilChart,
+  onToggleOilChart,
   taxSettings,
   onTaxSettingsChange,
   onSetupPin,
@@ -75,6 +78,7 @@ const SettingsModal = ({
   const [showApiKey, setShowApiKey]     = useState(false);
   const [fetching, setFetching]         = useState(false);
   const [fetchError, setFetchError]     = useState('');
+  const [avApiKey, setAvApiKey]         = useState('');
 
   useEffect(() => {
     if (isOpen) {
@@ -83,6 +87,7 @@ const SettingsModal = ({
       setGoldSaved(false);
       setFetchError('');
       setApiKey(getGoldApiKey());
+      setAvApiKey(getAlphaVantageKey());
       setPinEnabled(isPinEnabled());
       setLockTimeoutV(getLockTimeout());
       setStorageTypeV(getStorageType());
@@ -363,6 +368,40 @@ const SettingsModal = ({
               <p className="text-xs text-gray-400 dark:text-gray-500">Monthly USD rate trend (SGD, THB, EUR…)</p>
             </div>
             <Toggle enabled={showExchangeChart} onToggle={onToggleExchangeChart} />
+          </div>
+
+          {/* Oil price chart */}
+          <div className="mb-4 border-b border-gray-100 dark:border-gray-800 pb-4">
+            <div className="flex items-center justify-between mb-1">
+              <div>
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-200">🛢️ Oil Price Chart</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500">WTI & Brent monthly trend (Alpha Vantage)</p>
+              </div>
+              <Toggle enabled={showOilChart} onToggle={onToggleOilChart} />
+            </div>
+            {showOilChart && (
+              <div className="mt-2.5">
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
+                  Alpha Vantage API Key
+                  <a
+                    href="https://www.alphavantage.co/support/#api-key"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="ml-2 text-[var(--primary-500)] hover:underline"
+                  >
+                    (free)
+                  </a>
+                </label>
+                <input
+                  type="text"
+                  value={avApiKey}
+                  onChange={(e) => setAvApiKey(e.target.value)}
+                  onBlur={() => saveAlphaVantageKey(avApiKey.trim())}
+                  placeholder="Paste your API key here"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 font-mono"
+                />
+              </div>
+            )}
           </div>
 
           {/* Tax calculator */}

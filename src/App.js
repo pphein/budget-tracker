@@ -31,6 +31,7 @@ import GoldPriceBar from './components/GoldPriceBar';
 import ExchangeRateBar from './components/ExchangeRateBar';
 import GoldPriceChart from './components/GoldPriceChart';
 import ExchangeRateChart from './components/ExchangeRateChart';
+import OilPriceChart from './components/OilPriceChart';
 import TaxCard from './components/TaxCard';
 import {
   addTransaction, getTransactions, deleteTransaction, editTransaction,
@@ -79,6 +80,7 @@ const App = () => {
   const [showExchangeBar, setShowExchangeBar] = useState(() => localStorage.getItem('showExchangeBar') !== 'false');
   const [showGoldChart, setShowGoldChart]         = useState(() => localStorage.getItem('showGoldChart') === 'true');
   const [showExchangeChart, setShowExchangeChart] = useState(() => localStorage.getItem('showExchangeChart') === 'true');
+  const [showOilChart, setShowOilChart]           = useState(() => localStorage.getItem('showOilChart') === 'true');
   const [taxSettings, setTaxSettings]         = useState(getTaxSettings);
   const [installPrompt, setInstallPrompt] = useState(null);
 
@@ -180,6 +182,11 @@ const App = () => {
   const handleToggleExchangeChart = (val) => {
     setShowExchangeChart(val);
     localStorage.setItem('showExchangeChart', val);
+  };
+
+  const handleToggleOilChart = (val) => {
+    setShowOilChart(val);
+    localStorage.setItem('showOilChart', val);
   };
 
   const handleTaxSettingsChange = (updated) => {
@@ -542,6 +549,9 @@ const App = () => {
       {/* Exchange rate chart */}
       {showExchangeChart && <ExchangeRateChart />}
 
+      {/* Oil price chart */}
+      {showOilChart && <OilPriceChart />}
+
       {/* Summary cards — filtered by selected year + month */}
       <SummaryCards transactions={transactions.filter((t) => matchesFilter(t.date))} activeTab={activeTab} onTabChange={handleTabChange} />
 
@@ -732,6 +742,8 @@ const App = () => {
         onToggleGoldChart={handleToggleGoldChart}
         showExchangeChart={showExchangeChart}
         onToggleExchangeChart={handleToggleExchangeChart}
+        showOilChart={showOilChart}
+        onToggleOilChart={handleToggleOilChart}
         taxSettings={taxSettings}
         onTaxSettingsChange={handleTaxSettingsChange}
         onSetupPin={handleSetupPin}
