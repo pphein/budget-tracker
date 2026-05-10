@@ -10,9 +10,11 @@ import {
 } from '../utils/oilPrice';
 import { getPastMonths } from '../utils/goldHistory';
 
-const TYPES  = [
-  { id: 'WTI',   label: 'WTI',   flag: '🇺🇸' },
-  { id: 'BRENT', label: 'Brent', flag: '🌍' },
+const TYPES = [
+  { id: 'OCTANE92', apiFunc: 'WTI',          label: 'Octane 92',   icon: '⛽', unit: 'USD/bbl'   },
+  { id: 'OCTANE95', apiFunc: 'BRENT',         label: 'Octane 95',   icon: '⛽', unit: 'USD/bbl'   },
+  { id: 'DIESEL',   apiFunc: 'WTI',           label: 'Diesel',      icon: '🚛', unit: 'USD/bbl'   },
+  { id: 'NATGAS',   apiFunc: 'NATURAL_GAS',   label: 'Natural Gas', icon: '🔥', unit: 'USD/MMBtu' },
 ];
 const RANGES = [
   { label: '3M',  value: 3  },
@@ -23,7 +25,7 @@ const RANGES = [
 const fmtFull = (v) => `$${new Intl.NumberFormat().format(v)}`;
 
 const OilPriceChart = () => {
-  const [type, setType]     = useState('WTI');
+  const [typeId, setTypeId] = useState('OCTANE92');
   const [range, setRange]   = useState(6);
   const [data, setData]     = useState([]);
   const [loading, setLoading] = useState(false);
@@ -33,12 +35,13 @@ const OilPriceChart = () => {
     setLoading(true);
     setError('');
 
-    let history = getCachedOilHistory(t);
+    const apiFunc = t.apiFunc;
+    let history = getCachedOilHistory(apiFunc);
 
     if (!history) {
       try {
-        history = await fetchOilPrices(t);
-        setCachedOilHistory(t, history);
+        history = await fetchOilPrices(apiFunc);
+        setCachedOilHistory(apiFunc, history);
       } catch (e) {
         setError(e.message || 'Failed to load oil price data.');
         setLoading(false);
@@ -57,9 +60,11 @@ const OilPriceChart = () => {
     setLoading(false);
   }, []);
 
+  const activeType = TYPES.find((t) => t.id === typeId);
+
   useEffect(() => {
-    load(type, getPastMonths(range));
-  }, [type, range, load]);
+    if (activeType) load(activeType, getPastMonths(range));
+  }, [typeId, range, load, activeType]);
 
   const minPrice = data.length ? Math.min(...data.map((d) => d.price)) : 0;
   const maxPrice = data.length ? Math.max(...data.map((d) => d.price)) : 0;
@@ -75,7 +80,7 @@ const OilPriceChart = () => {
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold text-orange-600 dark:text-orange-400">
-              🛢️ Crude Oil (USD / bbl)
+              🛢️ {activeType?.label} ({activeType?.unit})
             </span>
             {loading && (
               <ArrowPathIcon className="w-4 h-4 text-gray-400 animate-spin flex-shrink-0" />
@@ -100,19 +105,19 @@ const OilPriceChart = () => {
           </div>
         </div>
 
-        {/* WTI / Brent tabs */}
-        <div className="flex gap-2 mb-3">
-          {TYPES.map(({ id, label, flag }) => (
+        {/* Fuel type tabs */}
+        <div className="flex gap-1.5 overflow-x-auto scrollbar-hide mb-3 pb-0.5">
+          {TYPES.map(({ id, label, icon }) => (
             <button
               key={id}
-              onClick={() => setType(id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                type === id
+              onClick={() => setTypeId(id)}
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium flex-shrink-0 transition-colors ${
+                typeId === id
                   ? 'bg-orange-500 text-white'
                   : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 active:bg-gray-200 dark:active:bg-gray-700'
               }`}
             >
-              <span>{flag}</span>
+              <span>{icon}</span>
               <span>{label}</span>
             </button>
           ))}
@@ -141,7 +146,7 @@ const OilPriceChart = () => {
                     domain={domain}
                   />
                   <Tooltip
-                    formatter={(v) => [fmtFull(v), type]}
+                    formatter={(v) => [fmtFull(v), activeType?.label]}
                     contentStyle={{ fontSize: 12 }}
                   />
                   <Line
