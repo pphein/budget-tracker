@@ -81,9 +81,6 @@ const ExchangeRateChart = () => {
     load(currencies, getPastMonths(range));
   }, [currencies, range, load]);
 
-  const allValues = data.flatMap((d) => currencies.map((cur) => d[cur]).filter((v) => v != null));
-  // const minRate   = allValues.length ? Math.min(...allValues) : 0;
-  // const maxRate   = allValues.length ? Math.max(...allValues) : 0;
 
   return (
     <div className="px-2 sm:px-4 max-w-6xl mx-auto mt-2">
@@ -190,23 +187,26 @@ const ExchangeRateChart = () => {
               </ResponsiveContainer>
             </div>
 
-            {/* Min / Max per currency */}
+            {/* Low / High per currency */}
             <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
               {currencies.map((cur) => {
-                const vals    = data.map((d) => d[cur]).filter((v) => v != null);
-                const lo      = vals.length ? Math.min(...vals) : null;
-                const hi      = vals.length ? Math.max(...vals) : null;
-                const info    = CHART_CURRENCIES.find((c) => c.code === cur);
-                const idx     = CHART_CURRENCIES.findIndex((c) => c.code === cur);
-                const color   = COLORS[idx % COLORS.length];
+                const vals  = data.map((d) => d[cur]).filter((v) => v != null);
+                const lo    = vals.length ? Math.min(...vals) : null;
+                const hi    = vals.length ? Math.max(...vals) : null;
+                const info  = CHART_CURRENCIES.find((c) => c.code === cur);
+                const idx   = CHART_CURRENCIES.findIndex((c) => c.code === cur);
+                const color = COLORS[idx % COLORS.length];
                 if (lo == null) return null;
                 return (
-                  <div key={cur} className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500">
+                  <div key={cur} className="flex items-center gap-2 text-xs">
                     <span className="inline-block w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
-                    <span>{info?.flag} {cur}:</span>
-                    <span className="font-medium text-gray-600 dark:text-gray-300">{fmtFull(lo)}</span>
-                    <span>–</span>
-                    <span className="font-medium text-gray-600 dark:text-gray-300">{fmtFull(hi)}</span>
+                    <span className="text-gray-400 dark:text-gray-500">{info?.flag} {cur}</span>
+                    <span className="text-gray-400 dark:text-gray-500">
+                      Low: <span className="font-medium text-emerald-600 dark:text-emerald-400">{fmtFull(lo)}</span>
+                    </span>
+                    <span className="text-gray-400 dark:text-gray-500">
+                      High: <span className="font-medium text-rose-500 dark:text-rose-400">{fmtFull(hi)}</span>
+                    </span>
                   </div>
                 );
               })}
