@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, forwardRef } from 'react';
 import { Cog6ToothIcon, ArrowDownTrayIcon } from '@heroicons/react/20/solid';
-import { ChevronRightIcon } from '@heroicons/react/24/outline';
+import { ChevronRightIcon, MagnifyingGlassIcon, XMarkIcon, CameraIcon } from '@heroicons/react/24/outline';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import DatePicker from 'react-datepicker';
@@ -37,6 +37,7 @@ import OilPriceChart from './components/OilPriceChart';
 import CurrencyConverter from './components/CurrencyConverter';
 import TaxCard from './components/TaxCard';
 import SpendingPieChart from './components/SpendingPieChart';
+import SpendingInsights from './components/SpendingInsights';
 import BudgetProgress from './components/BudgetProgress';
 import BudgetLimitsModal from './components/BudgetLimitsModal';
 import RecurringModal from './components/RecurringModal';
@@ -63,6 +64,28 @@ const DateBtn = forwardRef(({ value, onClick, className }, ref) => (
   <button className={className} onClick={onClick} ref={ref}>{value}</button>
 ));
 
+
+const compressImage = (file) =>
+  new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 400;
+        let { width, height } = img;
+        if (width > MAX || height > MAX) {
+          if (width > height) { height = Math.round(height * MAX / width); width = MAX; }
+          else { width = Math.round(width * MAX / height); height = MAX; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', 0.7));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
 
 const App = () => {
   const [activeTab, setActiveTab]       = useState('income');
@@ -112,10 +135,15 @@ const App = () => {
   const [isInfoOpen, setIsInfoOpen]             = useState(false);
   const [toast, setToast]                       = useState(null);
 
-  const tabs         = ['income', 'expense', 'balance'];
-  const touchStartX  = useRef(null);
-  const touchStartY  = useRef(null);
-  const isScrolling  = useRef(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [txCurrency, setTxCurrency]   = useState('USD');
+  const [attachment, setAttachment]   = useState('');
+
+  const tabs          = ['income', 'expense', 'balance'];
+  const touchStartX   = useRef(null);
+  const touchStartY   = useRef(null);
+  const isScrolling   = useRef(false);
+  const attachInputRef = useRef(null);
 
   // ─── PIN lock ─────────────────────────────────────────────────────────────
   // Lock on mount if PIN is enabled
@@ -337,11 +365,21 @@ const App = () => {
   const handleAddTransaction = async () => {
     if (!amount) { showInfo('Please enter an amount'); return; }
     if (!tag)    { showInfo('Please select a tag');    return; }
-    await addTransaction({ type: activeTab, tag, amount: parseFloat(amount), date: date.toISOString(), notes });
+    const allRates     = exchangeRates?.rates ? { ...exchangeRates.rates, USD: 1 } : null;
+    const enteredAmt   = parseFloat(amount);
+    const isForeign    = txCurrency !== 'USD' && allRates;
+    const storedAmount = isForeign ? enteredAmt / (allRates[txCurrency] || 1) : enteredAmt;
+    await addTransaction({
+      type: activeTab, tag, amount: storedAmount, date: date.toISOString(), notes,
+      currency:    isForeign ? txCurrency  : undefined,
+      origAmount:  isForeign ? enteredAmt  : undefined,
+      attachment:  attachment || undefined,
+    });
     const txData = await getTransactions();
     setTransactions(txData);
     setAmount('');
     setNotes('');
+    setAttachment('');
     showToast('Transaction saved');
   };
 
@@ -429,7 +467,12 @@ const App = () => {
   const filteredRecords = transactions.filter((r) => {
     if (r.type !== activeTab) return false;
     if (selectedTags.length > 0 && !selectedTags.includes(r.tag)) return false;
-    return matchesFilter(r.date);
+    if (!matchesFilter(r.date)) return false;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      if (!r.tag.toLowerCase().includes(q) && !(r.notes || '').toLowerCase().includes(q)) return false;
+    }
+    return true;
   });
 
   // ─── Balance data — grouped by balanceView ────────────────────────────────
@@ -599,8 +642,58 @@ const App = () => {
             {/* Transaction form */}
             <div className="bg-white dark:bg-gray-900 rounded-xl px-3 pt-3 pb-2 mb-3 shadow-sm space-y-2">
 
+              {/* Quick-add shortcuts */}
+              {(() => {
+                const seen = new Set();
+                const items = [];
+                for (const t of [...transactions].reverse()) {
+                  if (t.type !== activeTab) continue;
+                  const key = `${t.tag}|${t.amount}`;
+                  if (!seen.has(key) && items.length < 5) { seen.add(key); items.push(t); }
+                }
+                if (items.length === 0) return null;
+                return (
+                  <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+                    {items.map((t) => (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => { setTag(t.tag); setAmount(String(t.amount)); }}
+                        className="flex-shrink-0 px-3 py-1.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-left active:bg-gray-200 dark:active:bg-gray-700"
+                      >
+                        <span className="block text-xs font-medium text-gray-700 dark:text-gray-200">{t.tag}</span>
+                        <span className="block text-xs text-gray-400 dark:text-gray-500">{new Intl.NumberFormat().format(t.amount)}</span>
+                      </button>
+                    ))}
+                  </div>
+                );
+              })()}
+
               {/* Row 1: Tag (full width, searchable) */}
               <TagSelect tags={tags} value={tag} onChange={setTag} />
+
+              {/* Currency row — only when exchange rates are available */}
+              {exchangeRates?.rates && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">Currency</span>
+                  <select
+                    value={txCurrency}
+                    onChange={(e) => setTxCurrency(e.target.value)}
+                    className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none"
+                  >
+                    {['USD', ...Object.keys(exchangeRates.rates)].map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                  {txCurrency !== 'USD' && amount && (
+                    <span className="text-xs text-gray-400 dark:text-gray-500">
+                      ≈ {new Intl.NumberFormat('en-US', { maximumFractionDigits: 4 }).format(
+                        parseFloat(amount) / (exchangeRates.rates[txCurrency] || 1)
+                      )} USD
+                    </span>
+                  )}
+                </div>
+              )}
 
               {/* Row 2: Date | Amount | Save */}
               <div className="flex gap-2 items-center">
@@ -629,14 +722,49 @@ const App = () => {
                 </button>
               </div>
 
-              {/* Row 3: Note */}
-              <input
-                type="text"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Note (optional)"
-                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none placeholder-gray-400 dark:placeholder-gray-500"
-              />
+              {/* Row 3: Note + Attach */}
+              <div className="flex gap-2 items-center">
+                <input
+                  type="text"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Note (optional)"
+                  className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none placeholder-gray-400 dark:placeholder-gray-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => attachInputRef.current?.click()}
+                  className={`p-2 rounded-lg border flex-shrink-0 ${attachment ? 'border-[var(--primary-500)] text-[var(--primary-500)]' : 'border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500'}`}
+                >
+                  <CameraIcon className="w-5 h-5" />
+                </button>
+                <input
+                  ref={attachInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (file) setAttachment(await compressImage(file));
+                    e.target.value = '';
+                  }}
+                />
+              </div>
+
+              {/* Attachment preview */}
+              {attachment && (
+                <div className="relative inline-block">
+                  <img src={attachment} alt="receipt" className="h-20 rounded-xl object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => setAttachment('')}
+                    className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold"
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
 
               {/* Row 4: Quick actions */}
               <div className="flex gap-2 pt-0.5 pb-1">
@@ -682,6 +810,23 @@ const App = () => {
 
             {/* Filter + records */}
             <div className="bg-white dark:bg-gray-900 rounded-xl p-3 shadow-sm">
+              {/* Search */}
+              <div className="flex items-center gap-2 px-3 py-2 mb-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700">
+                <MagnifyingGlassIcon className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search tag or note…"
+                  className="flex-1 bg-transparent text-sm text-gray-800 dark:text-gray-200 focus:outline-none placeholder-gray-400 dark:placeholder-gray-500"
+                />
+                {searchQuery && (
+                  <button onClick={() => setSearchQuery('')} className="text-gray-400 flex-shrink-0">
+                    <XMarkIcon className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+
               <Filter
                 tags={tags}
                 allTags={allTags}
@@ -706,6 +851,8 @@ const App = () => {
 
         {/* ── Balance tab ── */}
         {activeTab === 'balance' && (
+          <>
+          <SpendingInsights transactions={transactions} />
           <div className="bg-white dark:bg-gray-900 rounded-xl p-3 shadow-sm">
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-base font-bold text-[var(--primary-600)] dark:text-[var(--primary-400)]">Balance</h2>
@@ -798,6 +945,7 @@ const App = () => {
               </div>
             )}
           </div>
+          </>
         )}
       </main>
 

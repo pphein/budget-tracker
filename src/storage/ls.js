@@ -61,9 +61,13 @@ export const syncDefaultTags = async () => {
 // ── Transactions ───────────────────────────────────────────────────────────────
 export const getTransactions = async () => load('transactions');
 
-export const addTransaction = async ({ type, tag, amount, date, notes }) => {
+export const addTransaction = async ({ type, tag, amount, date, notes, currency, origAmount, attachment }) => {
   const txs = load('transactions');
-  save('transactions', [...txs, { id: nextId(txs), type, tag, amount: parseFloat(amount), date, notes: notes || '' }]);
+  const record = { id: nextId(txs), type, tag, amount: parseFloat(amount), date, notes: notes || '' };
+  if (currency)           record.currency   = currency;
+  if (origAmount != null) record.origAmount  = origAmount;
+  if (attachment)         record.attachment  = attachment;
+  save('transactions', [...txs, record]);
 };
 
 export const editTransaction = async (id, updates) => {

@@ -218,11 +218,25 @@ const RecordList = ({ type, records, allTags, handleDeleteTransaction, handleEdi
                 <span className="text-gray-800 dark:text-gray-100 font-semibold">{fmt(activeRecord.amount)}</span>
                 <span className="text-gray-400 dark:text-gray-500 text-sm">{formatDateTime(activeRecord.date)}</span>
               </div>
+              {activeRecord.currency && (
+                <p className="text-xs text-gray-400 dark:text-gray-500">
+                  {new Intl.NumberFormat('en-US', { maximumFractionDigits: 4 }).format(activeRecord.origAmount)} {activeRecord.currency}
+                  {' → '}
+                  {fmt(activeRecord.amount)} USD
+                </p>
+              )}
               {activeRecord.notes ? (
                 <p className="text-sm text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 px-3 py-2 rounded-lg">
                   {activeRecord.notes}
                 </p>
               ) : null}
+              {activeRecord.attachment && (
+                <img
+                  src={activeRecord.attachment}
+                  alt="receipt"
+                  className="w-full max-h-48 object-cover rounded-xl"
+                />
+              )}
             </div>
 
             {/* Action buttons */}

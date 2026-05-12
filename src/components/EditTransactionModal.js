@@ -1,9 +1,31 @@
-import React, { useState, useEffect, forwardRef } from 'react';
-import { XMarkIcon } from '@heroicons/react/24/outline';
+import React, { useState, useEffect, useRef, forwardRef } from 'react';
+import { XMarkIcon, CameraIcon } from '@heroicons/react/24/outline';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import TagSelect from './TagSelect';
 import NumPad from './NumPad';
+
+const compressImage = (file) =>
+  new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 400;
+        let { width, height } = img;
+        if (width > MAX || height > MAX) {
+          if (width > height) { height = Math.round(height * MAX / width); width = MAX; }
+          else { width = Math.round(width * MAX / height); height = MAX; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', 0.7));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
 
 const DateBtn = forwardRef(({ value, onClick, className }, ref) => (
   <button type="button" onClick={onClick} ref={ref} className={className}>
@@ -12,10 +34,12 @@ const DateBtn = forwardRef(({ value, onClick, className }, ref) => (
 ));
 
 const EditTransactionModal = ({ isOpen, onClose, onSave, transaction, tags }) => {
-  const [amount, setAmount] = useState('');
-  const [tag,    setTag]    = useState('');
-  const [date,   setDate]   = useState(null);
-  const [notes,  setNotes]  = useState('');
+  const [amount,     setAmount]     = useState('');
+  const [tag,        setTag]        = useState('');
+  const [date,       setDate]       = useState(null);
+  const [notes,      setNotes]      = useState('');
+  const [attachment, setAttachment] = useState('');
+  const attachInputRef = useRef(null);
 
   useEffect(() => {
     if (transaction) {
@@ -23,12 +47,13 @@ const EditTransactionModal = ({ isOpen, onClose, onSave, transaction, tags }) =>
       setTag(transaction.tag ?? '');
       setDate(transaction.date ? new Date(transaction.date) : new Date());
       setNotes(transaction.notes ?? '');
+      setAttachment(transaction.attachment ?? '');
     }
   }, [transaction]);
 
   const handleSave = () => {
     if (!amount) return;
-    onSave(transaction.id, { amount: parseFloat(amount), tag, date: date?.toISOString(), notes });
+    onSave(transaction.id, { amount: parseFloat(amount), tag, date: date?.toISOString(), notes, attachment });
     onClose();
   };
 
@@ -91,6 +116,39 @@ const EditTransactionModal = ({ isOpen, onClose, onSave, transaction, tags }) =>
               placeholder="Optional note"
               className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none placeholder-gray-400 dark:placeholder-gray-500"
             />
+          </div>
+
+          {/* Attachment */}
+          <div>
+            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Receipt Photo</label>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => attachInputRef.current?.click()}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs font-medium ${attachment ? 'border-[var(--primary-500)] text-[var(--primary-500)]' : 'border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400'}`}
+              >
+                <CameraIcon className="w-4 h-4" />
+                {attachment ? 'Change' : 'Add Photo'}
+              </button>
+              {attachment && (
+                <button type="button" onClick={() => setAttachment('')} className="text-xs text-red-400">Remove</button>
+              )}
+              <input
+                ref={attachInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (file) setAttachment(await compressImage(file));
+                  e.target.value = '';
+                }}
+              />
+            </div>
+            {attachment && (
+              <img src={attachment} alt="receipt" className="mt-2 w-full max-h-36 object-cover rounded-xl" />
+            )}
           </div>
         </div>
 

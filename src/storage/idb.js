@@ -76,9 +76,13 @@ export const getTransactions = async () => {
   return db.getAll('transactions');
 };
 
-export const addTransaction = async ({ type, tag, amount, date, notes }) => {
+export const addTransaction = async ({ type, tag, amount, date, notes, currency, origAmount, attachment }) => {
   const db = await getDB();
-  await db.add('transactions', { type, tag, amount: parseFloat(amount), date, notes: notes || '' });
+  const record = { type, tag, amount: parseFloat(amount), date, notes: notes || '' };
+  if (currency)           record.currency   = currency;
+  if (origAmount != null) record.origAmount  = origAmount;
+  if (attachment)         record.attachment  = attachment;
+  await db.add('transactions', record);
 };
 
 export const editTransaction = async (id, updates) => {
