@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { saveAs } from 'file-saver';
 import * as XLSX from 'xlsx';
-import { ChevronUpIcon, ChevronDownIcon, BanknotesIcon, PencilIcon, TrashIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { ChevronUpIcon, ChevronDownIcon, BanknotesIcon, PencilIcon, TrashIcon, XMarkIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { getTagColorClasses } from '../utils/tagColors';
 
 const SortIcon = ({ column, sortKey, sortDir }) => {
@@ -14,9 +14,11 @@ const SortIcon = ({ column, sortKey, sortDir }) => {
 const fmt = (n) => new Intl.NumberFormat().format(n);
 
 const RecordList = ({ type, records, allTags, handleDeleteTransaction, handleEditTransaction, formatDateTime }) => {
-  const [sortKey, setSortKey]       = useState('date');
-  const [sortDir, setSortDir]       = useState('desc');
+  const [sortKey, setSortKey]           = useState('date');
+  const [sortDir, setSortDir]           = useState('desc');
   const [activeRecord, setActiveRecord] = useState(null);
+  const rowTouchX = useRef(null);
+  const rowTouchY = useRef(null);
 
   const toggleSort = (key) => {
     if (sortKey === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
@@ -40,6 +42,26 @@ const RecordList = ({ type, records, allTags, handleDeleteTransaction, handleEdi
     const found = allTags.find((t) => t.name === tagName);
     return found ? getTagColorClasses(found.colorIndex) : null;
   };
+
+  // Anomaly detection — flag records > mean + 2σ per tag (need ≥ 3 records per tag)
+  const anomalyIds = (() => {
+    const byTag = {};
+    sorted.forEach((r) => {
+      if (!byTag[r.tag]) byTag[r.tag] = [];
+      byTag[r.tag].push({ id: r.id, amount: parseFloat(r.amount) });
+    });
+    const ids = new Set();
+    Object.values(byTag).forEach((items) => {
+      if (items.length < 3) return;
+      const amounts = items.map((i) => i.amount);
+      const mean = amounts.reduce((a, b) => a + b, 0) / amounts.length;
+      const std  = Math.sqrt(amounts.reduce((a, b) => a + (b - mean) ** 2, 0) / amounts.length);
+      items.forEach((item) => {
+        if (item.amount > mean + 2 * std && item.amount > mean * 2) ids.add(item.id);
+      });
+    });
+    return ids;
+  })();
 
   const exportToExcel = () => {
     const worksheet = XLSX.utils.json_to_sheet(
@@ -104,22 +126,37 @@ const RecordList = ({ type, records, allTags, handleDeleteTransaction, handleEdi
             {sorted.map((record, index) => {
               running += Number(record.amount);
               const runningSnapshot = running;
-              const color = getColor(record.tag);
+              const color    = getColor(record.tag);
+              const isAnomaly = anomalyIds.has(record.id);
               return (
                 <tr
                   key={record.id ?? index}
-                  className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"
+                  className={`cursor-pointer ${isAnomaly ? 'bg-amber-50 dark:bg-amber-900/10 hover:bg-amber-100 dark:hover:bg-amber-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'}`}
+                  onTouchStart={(e) => { rowTouchX.current = e.touches[0].clientX; rowTouchY.current = e.touches[0].clientY; }}
+                  onTouchEnd={(e) => {
+                    if (rowTouchX.current === null) return;
+                    const dx = e.changedTouches[0].clientX - rowTouchX.current;
+                    const dy = e.changedTouches[0].clientY - rowTouchY.current;
+                    rowTouchX.current = null; rowTouchY.current = null;
+                    if (Math.abs(dy) > Math.abs(dx)) { setActiveRecord(record); return; }
+                    if (dx < -60) { handleDeleteTransaction(record); }
+                    else if (dx > 60) { handleEditTransaction(record); }
+                    else { setActiveRecord(record); }
+                  }}
                   onClick={() => setActiveRecord(record)}
                 >
                   <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
-                    {color ? (
-                      <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${color.bg}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${color.dot}`} />
-                        {record.tag}
-                      </span>
-                    ) : (
-                      <span className="text-gray-800 dark:text-gray-200">{record.tag}</span>
-                    )}
+                    <div className="flex items-center gap-1">
+                      {isAnomaly && <ExclamationTriangleIcon className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" title="Unusually large amount" />}
+                      {color ? (
+                        <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${color.bg}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${color.dot}`} />
+                          {record.tag}
+                        </span>
+                      ) : (
+                        <span className="text-gray-800 dark:text-gray-200">{record.tag}</span>
+                      )}
+                    </div>
                   </td>
                   <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-right text-gray-800 dark:text-gray-200 font-medium">
                     {fmt(record.amount)}
@@ -206,6 +243,12 @@ const RecordList = ({ type, records, allTags, handleDeleteTransaction, handleEdi
 
             {/* Record detail */}
             <div className="px-4 pb-4 space-y-2">
+              {anomalyIds.has(activeRecord?.id) && (
+                <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 dark:bg-amber-900/20 rounded-xl">
+                  <ExclamationTriangleIcon className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                  <p className="text-xs text-amber-700 dark:text-amber-400">Unusually large for this tag</p>
+                </div>
+              )}
               <div className="flex flex-wrap items-center gap-3">
                 {activeColor ? (
                   <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-sm font-medium ${activeColor.bg}`}>
