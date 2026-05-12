@@ -52,7 +52,7 @@ const CurrencyConverter = ({ rates }) => {
             type="number"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            className="w-20 min-w-0 px-2 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none"
+            className="w-20 min-w-0 px-1 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none"
             placeholder="1"
             min="0"
           />
@@ -61,7 +61,7 @@ const CurrencyConverter = ({ rates }) => {
           <select
             value={from}
             onChange={(e) => setFrom(e.target.value)}
-            className="flex-1 min-w-0 px-2 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none"
+            className="flex-1 min-w-0 px-1 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none"
           >
             {available.map((c) => (
               <option key={c.code} value={c.code}>{c.flag} {c.code}</option>
@@ -80,7 +80,7 @@ const CurrencyConverter = ({ rates }) => {
           <select
             value={to}
             onChange={(e) => setTo(e.target.value)}
-            className="flex-1 min-w-0 px-2 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none"
+            className="flex-1 min-w-0 px-1 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none"
           >
             {available.map((c) => (
               <option key={c.code} value={c.code}>{c.flag} {c.code}</option>
