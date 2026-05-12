@@ -40,9 +40,6 @@ const CurrencyConverter = ({ rates }) => {
   const result   = parseFloat(amount || 0) * (toRate / fromRate);
   const rate1    = toRate / fromRate;
 
-  const fromInfo = available.find((c) => c.code === from);
-  const toInfo   = available.find((c) => c.code === to);
-
   const swap = () => { setFrom(to); setTo(from); };
 
   return (
