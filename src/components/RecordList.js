@@ -222,7 +222,7 @@ const RecordList = ({ type, records, allTags, handleDeleteTransaction, handleEdi
                 <p className="text-xs text-gray-400 dark:text-gray-500">
                   {new Intl.NumberFormat('en-US', { maximumFractionDigits: 4 }).format(activeRecord.origAmount)} {activeRecord.currency}
                   {' → '}
-                  {fmt(activeRecord.amount)} USD
+                  {fmt(activeRecord.amount)} MMK
                 </p>
               )}
               {activeRecord.notes ? (

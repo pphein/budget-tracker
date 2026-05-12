@@ -136,7 +136,7 @@ const App = () => {
   const [toast, setToast]                       = useState(null);
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [txCurrency, setTxCurrency]   = useState('USD');
+  const [txCurrency, setTxCurrency]   = useState('MMK');
   const [attachment, setAttachment]   = useState('');
 
   const tabs          = ['income', 'expense', 'balance'];
@@ -367,8 +367,11 @@ const App = () => {
     if (!tag)    { showInfo('Please select a tag');    return; }
     const allRates     = exchangeRates?.rates ? { ...exchangeRates.rates, USD: 1 } : null;
     const enteredAmt   = parseFloat(amount);
-    const isForeign    = txCurrency !== 'USD' && allRates;
-    const storedAmount = isForeign ? enteredAmt / (allRates[txCurrency] || 1) : enteredAmt;
+    const isForeign    = txCurrency !== 'MMK' && allRates;
+    // Convert to MMK: enteredAmt * (MMK_rate / txCurrency_rate)
+    const storedAmount = (isForeign && allRates[txCurrency])
+      ? enteredAmt * ((allRates['MMK'] || 1) / allRates[txCurrency])
+      : enteredAmt;
     await addTransaction({
       type: activeTab, tag, amount: storedAmount, date: date.toISOString(), notes,
       currency:    isForeign ? txCurrency  : undefined,
@@ -681,15 +684,15 @@ const App = () => {
                     onChange={(e) => setTxCurrency(e.target.value)}
                     className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none"
                   >
-                    {['USD', ...Object.keys(exchangeRates.rates)].map((c) => (
+                    {['MMK', 'USD', ...Object.keys(exchangeRates.rates).filter((c) => c !== 'MMK')].map((c) => (
                       <option key={c} value={c}>{c}</option>
                     ))}
                   </select>
-                  {txCurrency !== 'USD' && amount && (
+                  {txCurrency !== 'MMK' && amount && exchangeRates.rates['MMK'] && (
                     <span className="text-xs text-gray-400 dark:text-gray-500">
-                      ≈ {new Intl.NumberFormat('en-US', { maximumFractionDigits: 4 }).format(
-                        parseFloat(amount) / (exchangeRates.rates[txCurrency] || 1)
-                      )} USD
+                      ≈ {new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(
+                        parseFloat(amount) * (exchangeRates.rates['MMK'] / (exchangeRates.rates[txCurrency] || 1))
+                      )} MMK
                     </span>
                   )}
                 </div>
