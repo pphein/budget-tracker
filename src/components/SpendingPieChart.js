@@ -2,7 +2,7 @@ import React from 'react';
 import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
 } from 'recharts';
-import { getTagColorClasses } from '../utils/tagColors';
+// import { getTagColorClasses } from '../utils/tagColors';
 
 const TAG_COLORS = [
   '#ef4444','#f97316','#eab308','#22c55e','#14b8a6',
