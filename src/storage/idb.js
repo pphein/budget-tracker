@@ -76,9 +76,9 @@ export const getTransactions = async () => {
   return db.getAll('transactions');
 };
 
-export const addTransaction = async ({ type, tag, amount, date }) => {
+export const addTransaction = async ({ type, tag, amount, date, notes }) => {
   const db = await getDB();
-  await db.add('transactions', { type, tag, amount: parseFloat(amount), date });
+  await db.add('transactions', { type, tag, amount: parseFloat(amount), date, notes: notes || '' });
 };
 
 export const editTransaction = async (id, updates) => {

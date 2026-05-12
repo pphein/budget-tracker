@@ -60,6 +60,8 @@ const SettingsModal = ({
   onToggleExchangeChart,
   showOilChart,
   onToggleOilChart,
+  showCurrencyConverter,
+  onToggleCurrencyConverter,
   taxSettings,
   onTaxSettingsChange,
   onSetupPin,
@@ -374,6 +376,15 @@ const SettingsModal = ({
               <p className="text-xs text-gray-400 dark:text-gray-500">WTI & Brent monthly trend — no API key needed</p>
             </div>
             <Toggle enabled={showOilChart} onToggle={onToggleOilChart} />
+          </div>
+
+          {/* Currency converter */}
+          <div className="flex items-center justify-between py-2 mb-4 border-b border-gray-100 dark:border-gray-800">
+            <div>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-200">Currency Converter</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">Quick converter using live exchange rates</p>
+            </div>
+            <Toggle enabled={showCurrencyConverter} onToggle={onToggleCurrencyConverter} />
           </div>
 
           {/* Tax calculator */}

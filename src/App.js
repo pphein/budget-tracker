@@ -27,12 +27,19 @@ import { getGoldPrices, saveGoldPrices } from './utils/goldPrice';
 import { getCachedRates, saveRates, fetchExchangeRates } from './utils/exchangeRate';
 import { getTaxSettings, saveTaxSettings } from './utils/taxCalculator';
 import { isPinEnabled, shouldLockNow, recordActivity } from './utils/pin';
+import { getBudgetLimits } from './utils/budgetLimits';
+import { processDueRecurring } from './utils/recurring';
 import GoldPriceBar from './components/GoldPriceBar';
 import ExchangeRateBar from './components/ExchangeRateBar';
 import GoldPriceChart from './components/GoldPriceChart';
 import ExchangeRateChart from './components/ExchangeRateChart';
 import OilPriceChart from './components/OilPriceChart';
+import CurrencyConverter from './components/CurrencyConverter';
 import TaxCard from './components/TaxCard';
+import SpendingPieChart from './components/SpendingPieChart';
+import BudgetProgress from './components/BudgetProgress';
+import BudgetLimitsModal from './components/BudgetLimitsModal';
+import RecurringModal from './components/RecurringModal';
 import {
   addTransaction, getTransactions, deleteTransaction, editTransaction,
   getTags, addTag, deleteTag, editTag, syncDefaultTags,
@@ -80,8 +87,13 @@ const App = () => {
   const [showExchangeBar, setShowExchangeBar] = useState(() => localStorage.getItem('showExchangeBar') !== 'false');
   const [showGoldChart, setShowGoldChart]         = useState(() => localStorage.getItem('showGoldChart') === 'true');
   const [showExchangeChart, setShowExchangeChart] = useState(() => localStorage.getItem('showExchangeChart') === 'true');
-  const [showOilChart, setShowOilChart]           = useState(() => localStorage.getItem('showOilChart') === 'true');
+  const [showOilChart, setShowOilChart]                   = useState(() => localStorage.getItem('showOilChart') === 'true');
+  const [showCurrencyConverter, setShowCurrencyConverter] = useState(() => localStorage.getItem('showCurrencyConverter') === 'true');
   const [taxSettings, setTaxSettings]         = useState(getTaxSettings);
+  const [notes, setNotes]                     = useState('');
+  const [budgetLimits, setBudgetLimits]       = useState(() => getBudgetLimits());
+  const [isRecurringOpen, setIsRecurringOpen]         = useState(false);
+  const [isBudgetLimitsOpen, setIsBudgetLimitsOpen]   = useState(false);
   const [installPrompt, setInstallPrompt] = useState(null);
 
   // PIN / lock
@@ -189,10 +201,28 @@ const App = () => {
     localStorage.setItem('showOilChart', val);
   };
 
+  const handleToggleCurrencyConverter = (val) => {
+    setShowCurrencyConverter(val);
+    localStorage.setItem('showCurrencyConverter', val);
+  };
+
   const handleTaxSettingsChange = (updated) => {
     const saved = saveTaxSettings(updated);
     setTaxSettings(saved);
   };
+
+  // Process due recurring transactions on mount
+  useEffect(() => {
+    const toCreate = processDueRecurring();
+    if (toCreate.length === 0) return;
+    Promise.all(toCreate.map((tx) => addTransaction(tx)))
+      .then(() => getTransactions())
+      .then((txData) => {
+        setTransactions(txData);
+        showToast(`${toCreate.length} recurring transaction${toCreate.length > 1 ? 's' : ''} added`);
+      })
+      .catch(console.error);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch exchange rates on mount if cache is stale
   useEffect(() => {
@@ -307,10 +337,11 @@ const App = () => {
   const handleAddTransaction = async () => {
     if (!amount) { showInfo('Please enter an amount'); return; }
     if (!tag)    { showInfo('Please select a tag');    return; }
-    await addTransaction({ type: activeTab, tag, amount: parseFloat(amount), date: date.toISOString() });
+    await addTransaction({ type: activeTab, tag, amount: parseFloat(amount), date: date.toISOString(), notes });
     const txData = await getTransactions();
     setTransactions(txData);
     setAmount('');
+    setNotes('');
     showToast('Transaction saved');
   };
 
@@ -552,6 +583,11 @@ const App = () => {
       {/* Oil price chart */}
       {showOilChart && <OilPriceChart />}
 
+      {/* Currency converter */}
+      {showCurrencyConverter && (
+        <CurrencyConverter rates={exchangeRates?.rates} />
+      )}
+
       {/* Summary cards — filtered by selected year + month */}
       <SummaryCards transactions={transactions.filter((t) => matchesFilter(t.date))} activeTab={activeTab} onTabChange={handleTabChange} />
 
@@ -592,6 +628,33 @@ const App = () => {
                   Save
                 </button>
               </div>
+
+              {/* Row 3: Note */}
+              <input
+                type="text"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Note (optional)"
+                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none placeholder-gray-400 dark:placeholder-gray-500"
+              />
+
+              {/* Row 4: Quick actions */}
+              <div className="flex gap-2 pt-0.5 pb-1">
+                <button
+                  onClick={() => setIsRecurringOpen(true)}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs font-medium active:bg-gray-200 dark:active:bg-gray-700"
+                >
+                  Recurring
+                </button>
+                {activeTab === 'expense' && (
+                  <button
+                    onClick={() => setIsBudgetLimitsOpen(true)}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs font-medium active:bg-gray-200 dark:active:bg-gray-700"
+                  >
+                    Budget Limits
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Tax card — income tab only */}
@@ -602,6 +665,19 @@ const App = () => {
                   country={taxSettings.country}
                 />
               </div>
+            )}
+
+            {/* Budget progress — expense tab only */}
+            {activeTab === 'expense' && (
+              <BudgetProgress
+                expenseByTag={transactions
+                  .filter((t) => t.type === 'expense' && matchesFilter(t.date))
+                  .reduce((acc, t) => {
+                    acc[t.tag] = (acc[t.tag] || 0) + parseFloat(t.amount || 0);
+                    return acc;
+                  }, {})}
+                limits={budgetLimits}
+              />
             )}
 
             {/* Filter + records */}
@@ -663,6 +739,13 @@ const App = () => {
 
             {/* Chart */}
             <BalanceChart data={balanceData} view={balanceView} />
+
+            {/* Spending breakdown */}
+            <SpendingPieChart
+              transactions={transactions.filter((t) => matchesFilter(t.date))}
+              allTags={allTags}
+              type="expense"
+            />
 
             {/* Table */}
             {loading ? (
@@ -744,6 +827,8 @@ const App = () => {
         onToggleExchangeChart={handleToggleExchangeChart}
         showOilChart={showOilChart}
         onToggleOilChart={handleToggleOilChart}
+        showCurrencyConverter={showCurrencyConverter}
+        onToggleCurrencyConverter={handleToggleCurrencyConverter}
         taxSettings={taxSettings}
         onTaxSettingsChange={handleTaxSettingsChange}
         onSetupPin={handleSetupPin}
@@ -782,6 +867,19 @@ const App = () => {
         onClose={() => setIsDeleteOpen(false)}
         onConfirm={confirmDelete}
         transaction={deletingTx}
+      />
+
+      <RecurringModal
+        isOpen={isRecurringOpen}
+        onClose={() => setIsRecurringOpen(false)}
+        allTags={allTags}
+      />
+
+      <BudgetLimitsModal
+        isOpen={isBudgetLimitsOpen}
+        onClose={() => setIsBudgetLimitsOpen(false)}
+        expenseTags={allTags.filter((t) => t.type === 'expense')}
+        onChange={(updated) => setBudgetLimits(updated)}
       />
 
       <InfoModal

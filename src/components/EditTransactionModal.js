@@ -13,20 +13,22 @@ const DateBtn = forwardRef(({ value, onClick, className }, ref) => (
 
 const EditTransactionModal = ({ isOpen, onClose, onSave, transaction, tags }) => {
   const [amount, setAmount] = useState('');
-  const [tag, setTag]       = useState('');
-  const [date, setDate]     = useState(null);
+  const [tag,    setTag]    = useState('');
+  const [date,   setDate]   = useState(null);
+  const [notes,  setNotes]  = useState('');
 
   useEffect(() => {
     if (transaction) {
       setAmount(String(transaction.amount ?? ''));
       setTag(transaction.tag ?? '');
       setDate(transaction.date ? new Date(transaction.date) : new Date());
+      setNotes(transaction.notes ?? '');
     }
   }, [transaction]);
 
   const handleSave = () => {
     if (!amount) return;
-    onSave(transaction.id, { amount: parseFloat(amount), tag, date: date?.toISOString() });
+    onSave(transaction.id, { amount: parseFloat(amount), tag, date: date?.toISOString(), notes });
     onClose();
   };
 
@@ -77,6 +79,18 @@ const EditTransactionModal = ({ isOpen, onClose, onSave, transaction, tags }) =>
           <div>
             <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Amount</label>
             <NumPad value={amount} onChange={setAmount} placeholder="Enter amount" />
+          </div>
+
+          {/* Notes */}
+          <div>
+            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Note</label>
+            <input
+              type="text"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Optional note"
+              className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none placeholder-gray-400 dark:placeholder-gray-500"
+            />
           </div>
         </div>
 

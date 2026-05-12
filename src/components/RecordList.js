@@ -43,7 +43,7 @@ const RecordList = ({ type, records, allTags, handleDeleteTransaction, handleEdi
 
   const exportToExcel = () => {
     const worksheet = XLSX.utils.json_to_sheet(
-      sorted.map((r) => ({ Tag: r.tag, Amount: r.amount, Date: r.date }))
+      sorted.map((r) => ({ Tag: r.tag, Amount: r.amount, Date: r.date, Note: r.notes || '' }))
     );
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Records');
@@ -205,17 +205,24 @@ const RecordList = ({ type, records, allTags, handleDeleteTransaction, handleEdi
             </div>
 
             {/* Record detail */}
-            <div className="px-4 pb-4 flex flex-wrap items-center gap-3">
-              {activeColor ? (
-                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-sm font-medium ${activeColor.bg}`}>
-                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${activeColor.dot}`} />
-                  {activeRecord.tag}
-                </span>
-              ) : (
-                <span className="text-gray-700 dark:text-gray-200 font-medium">{activeRecord.tag}</span>
-              )}
-              <span className="text-gray-800 dark:text-gray-100 font-semibold">{fmt(activeRecord.amount)}</span>
-              <span className="text-gray-400 dark:text-gray-500 text-sm">{formatDateTime(activeRecord.date)}</span>
+            <div className="px-4 pb-4 space-y-2">
+              <div className="flex flex-wrap items-center gap-3">
+                {activeColor ? (
+                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-sm font-medium ${activeColor.bg}`}>
+                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${activeColor.dot}`} />
+                    {activeRecord.tag}
+                  </span>
+                ) : (
+                  <span className="text-gray-700 dark:text-gray-200 font-medium">{activeRecord.tag}</span>
+                )}
+                <span className="text-gray-800 dark:text-gray-100 font-semibold">{fmt(activeRecord.amount)}</span>
+                <span className="text-gray-400 dark:text-gray-500 text-sm">{formatDateTime(activeRecord.date)}</span>
+              </div>
+              {activeRecord.notes ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 px-3 py-2 rounded-lg">
+                  {activeRecord.notes}
+                </p>
+              ) : null}
             </div>
 
             {/* Action buttons */}

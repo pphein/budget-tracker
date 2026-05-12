@@ -61,9 +61,9 @@ export const syncDefaultTags = async () => {
 // ── Transactions ───────────────────────────────────────────────────────────────
 export const getTransactions = async () => load('transactions');
 
-export const addTransaction = async ({ type, tag, amount, date }) => {
+export const addTransaction = async ({ type, tag, amount, date, notes }) => {
   const txs = load('transactions');
-  save('transactions', [...txs, { id: nextId(txs), type, tag, amount: parseFloat(amount), date }]);
+  save('transactions', [...txs, { id: nextId(txs), type, tag, amount: parseFloat(amount), date, notes: notes || '' }]);
 };
 
 export const editTransaction = async (id, updates) => {
