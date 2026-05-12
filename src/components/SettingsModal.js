@@ -67,6 +67,12 @@ const SettingsModal = ({
   onSetupPin,
   onChangePin,
   onStorageChange,
+  // Feature add-ons
+  featureRecurring,     onToggleFeatureRecurring,
+  featureSplit,         onToggleFeatureSplit,
+  featureTemplates,     onToggleFeatureTemplates,
+  featureBudgetLimits,  onToggleFeatureBudgetLimits,
+  featureCSVImport,     onToggleFeatureCSVImport,
 }) => {
   const [pinEnabled,   setPinEnabled]   = useState(false);
   const [lockTimeout,  setLockTimeoutV] = useState(5);
@@ -385,6 +391,51 @@ const SettingsModal = ({
               <p className="text-xs text-gray-400 dark:text-gray-500">Quick converter using live exchange rates</p>
             </div>
             <Toggle enabled={showCurrencyConverter} onToggle={onToggleCurrencyConverter} />
+          </div>
+
+          {/* Recurring transactions */}
+          <div className="flex items-center justify-between py-2 mb-4 border-b border-gray-100 dark:border-gray-800">
+            <div>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-200">Recurring Transactions</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">Auto-create scheduled income/expenses</p>
+            </div>
+            <Toggle enabled={featureRecurring} onToggle={onToggleFeatureRecurring} />
+          </div>
+
+          {/* Split transaction */}
+          <div className="flex items-center justify-between py-2 mb-4 border-b border-gray-100 dark:border-gray-800">
+            <div>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-200">Split Transaction</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">Divide one payment across multiple tags</p>
+            </div>
+            <Toggle enabled={featureSplit} onToggle={onToggleFeatureSplit} />
+          </div>
+
+          {/* Templates */}
+          <div className="flex items-center justify-between py-2 mb-4 border-b border-gray-100 dark:border-gray-800">
+            <div>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-200">Quick Templates</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">Save preset entries for one-tap add</p>
+            </div>
+            <Toggle enabled={featureTemplates} onToggle={onToggleFeatureTemplates} />
+          </div>
+
+          {/* Budget Limits */}
+          <div className="flex items-center justify-between py-2 mb-4 border-b border-gray-100 dark:border-gray-800">
+            <div>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-200">Budget Limits</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">Set monthly spending caps per tag</p>
+            </div>
+            <Toggle enabled={featureBudgetLimits} onToggle={onToggleFeatureBudgetLimits} />
+          </div>
+
+          {/* CSV Import */}
+          <div className="flex items-center justify-between py-2 mb-4 border-b border-gray-100 dark:border-gray-800">
+            <div>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-200">CSV Import</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">Bulk import transactions from a CSV file</p>
+            </div>
+            <Toggle enabled={featureCSVImport} onToggle={onToggleFeatureCSVImport} />
           </div>
 
           {/* Tax calculator */}

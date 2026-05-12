@@ -123,6 +123,11 @@ const App = () => {
   const [showExchangeChart, setShowExchangeChart] = useState(() => localStorage.getItem('showExchangeChart') === 'true');
   const [showOilChart, setShowOilChart]                   = useState(() => localStorage.getItem('showOilChart') === 'true');
   const [showCurrencyConverter, setShowCurrencyConverter] = useState(() => localStorage.getItem('showCurrencyConverter') === 'true');
+  const [featureRecurring,    setFeatureRecurring]    = useState(() => localStorage.getItem('featureRecurring')    === 'true');
+  const [featureSplit,        setFeatureSplit]        = useState(() => localStorage.getItem('featureSplit')        === 'true');
+  const [featureTemplates,    setFeatureTemplates]    = useState(() => localStorage.getItem('featureTemplates')    === 'true');
+  const [featureBudgetLimits, setFeatureBudgetLimits] = useState(() => localStorage.getItem('featureBudgetLimits') === 'true');
+  const [featureCSVImport,    setFeatureCSVImport]    = useState(() => localStorage.getItem('featureCSVImport')    === 'true');
   const [taxSettings, setTaxSettings]         = useState(getTaxSettings);
   const [notes, setNotes]                     = useState('');
   const [budgetLimits, setBudgetLimits]       = useState(() => getBudgetLimits());
@@ -255,6 +260,12 @@ const App = () => {
     setShowCurrencyConverter(val);
     localStorage.setItem('showCurrencyConverter', val);
   };
+
+  const handleToggleFeatureRecurring    = (val) => { setFeatureRecurring(val);    localStorage.setItem('featureRecurring',    val); };
+  const handleToggleFeatureSplit        = (val) => { setFeatureSplit(val);        localStorage.setItem('featureSplit',        val); };
+  const handleToggleFeatureTemplates    = (val) => { setFeatureTemplates(val);    localStorage.setItem('featureTemplates',    val); };
+  const handleToggleFeatureBudgetLimits = (val) => { setFeatureBudgetLimits(val); localStorage.setItem('featureBudgetLimits', val); };
+  const handleToggleFeatureCSVImport    = (val) => { setFeatureCSVImport(val);    localStorage.setItem('featureCSVImport',    val); };
 
   const handleTaxSettingsChange = (updated) => {
     const saved = saveTaxSettings(updated);
@@ -711,9 +722,9 @@ const App = () => {
             {/* Transaction form */}
             <div className="bg-white dark:bg-gray-900 rounded-xl px-3 pt-3 pb-2 mb-3 shadow-sm space-y-2">
 
-              {/* Quick-add: Templates + recent transactions */}
+              {/* Quick-add: Templates (if enabled) + recent transactions */}
               {(() => {
-                const typeTpl = templates.filter((t) => t.type === activeTab);
+                const typeTpl = featureTemplates ? templates.filter((t) => t.type === activeTab) : [];
                 const seen = new Set();
                 const recent = [];
                 for (const t of [...transactions].reverse()) {
@@ -838,7 +849,7 @@ const App = () => {
               )}
 
               {/* Split transaction panel */}
-              {splitMode && (
+              {featureSplit && splitMode && (
                 <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3 space-y-2">
                   <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Split Transaction</p>
                   {splitRows.map((row, i) => (
@@ -878,31 +889,41 @@ const App = () => {
                 </div>
               )}
 
-              {/* Row 4: Quick actions */}
-              <div className="flex flex-wrap gap-2 pt-0.5 pb-1">
-                <button onClick={() => setIsRecurringOpen(true)}
-                  className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs font-medium active:bg-gray-200 dark:active:bg-gray-700">
-                  Recurring
-                </button>
-                {activeTab === 'expense' && (
-                  <button onClick={() => setIsBudgetLimitsOpen(true)}
-                    className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs font-medium active:bg-gray-200 dark:active:bg-gray-700">
-                    Budget Limits
-                  </button>
-                )}
-                <button onClick={() => setSplitMode((s) => !s)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium active:opacity-80 ${splitMode ? 'bg-[var(--primary-100)] dark:bg-[var(--primary-900)]/30 text-[var(--primary-600)] dark:text-[var(--primary-400)]' : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'}`}>
-                  Split
-                </button>
-                <button onClick={() => setIsTemplatesOpen(true)}
-                  className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs font-medium active:bg-gray-200 dark:active:bg-gray-700">
-                  Templates
-                </button>
-                <button onClick={() => setIsCSVOpen(true)}
-                  className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs font-medium active:bg-gray-200 dark:active:bg-gray-700">
-                  Import CSV
-                </button>
-              </div>
+              {/* Row 4: Quick actions (only show enabled add-ons) */}
+              {(featureRecurring || featureSplit || featureTemplates || (featureBudgetLimits && activeTab === 'expense') || featureCSVImport) && (
+                <div className="flex flex-wrap gap-2 pt-0.5 pb-1">
+                  {featureRecurring && (
+                    <button onClick={() => setIsRecurringOpen(true)}
+                      className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs font-medium active:bg-gray-200 dark:active:bg-gray-700">
+                      Recurring
+                    </button>
+                  )}
+                  {featureSplit && (
+                    <button onClick={() => setSplitMode((s) => !s)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium active:opacity-80 ${splitMode ? 'bg-[var(--primary-100)] dark:bg-[var(--primary-900)]/30 text-[var(--primary-600)] dark:text-[var(--primary-400)]' : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'}`}>
+                      Split
+                    </button>
+                  )}
+                  {featureTemplates && (
+                    <button onClick={() => setIsTemplatesOpen(true)}
+                      className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs font-medium active:bg-gray-200 dark:active:bg-gray-700">
+                      Templates
+                    </button>
+                  )}
+                  {featureBudgetLimits && activeTab === 'expense' && (
+                    <button onClick={() => setIsBudgetLimitsOpen(true)}
+                      className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs font-medium active:bg-gray-200 dark:active:bg-gray-700">
+                      Budget Limits
+                    </button>
+                  )}
+                  {featureCSVImport && (
+                    <button onClick={() => setIsCSVOpen(true)}
+                      className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs font-medium active:bg-gray-200 dark:active:bg-gray-700">
+                      Import CSV
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Tax card — income tab only */}
@@ -915,8 +936,8 @@ const App = () => {
               </div>
             )}
 
-            {/* Budget progress — expense tab only */}
-            {activeTab === 'expense' && (
+            {/* Budget progress — expense tab only, when feature enabled */}
+            {activeTab === 'expense' && featureBudgetLimits && (
               <BudgetProgress
                 expenseByTag={transactions
                   .filter((t) => t.type === 'expense' && matchesFilter(t.date))
@@ -1125,6 +1146,11 @@ const App = () => {
         onSetupPin={handleSetupPin}
         onChangePin={handleChangePin}
         onStorageChange={loadAll}
+        featureRecurring={featureRecurring}         onToggleFeatureRecurring={handleToggleFeatureRecurring}
+        featureSplit={featureSplit}                 onToggleFeatureSplit={handleToggleFeatureSplit}
+        featureTemplates={featureTemplates}         onToggleFeatureTemplates={handleToggleFeatureTemplates}
+        featureBudgetLimits={featureBudgetLimits}   onToggleFeatureBudgetLimits={handleToggleFeatureBudgetLimits}
+        featureCSVImport={featureCSVImport}         onToggleFeatureCSVImport={handleToggleFeatureCSVImport}
       />
 
       <PinSetupModal
