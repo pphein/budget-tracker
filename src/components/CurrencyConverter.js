@@ -54,19 +54,16 @@ const CurrencyConverter = ({ rates }) => {
 
         {/* From card */}
         <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 p-3">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-gray-400 dark:text-gray-500">From</span>
-            <select
-              value={from}
-              onChange={(e) => setFrom(e.target.value)}
-              className={selectClass}
-              style={{ width: 'auto' }}
-            >
-              {available.map((c) => (
-                <option key={c.code} value={c.code}>{c.flag} {c.code}</option>
-              ))}
-            </select>
-          </div>
+          <span className="text-xs font-medium text-gray-400 dark:text-gray-500">From</span>
+          <select
+            value={from}
+            onChange={(e) => setFrom(e.target.value)}
+            className={`${selectClass} mt-1 mb-2`}
+          >
+            {available.map((c) => (
+              <option key={c.code} value={c.code}>{c.flag} {c.code}</option>
+            ))}
+          </select>
           <input
             type="number"
             value={amount}
@@ -75,9 +72,6 @@ const CurrencyConverter = ({ rates }) => {
             min="0"
             className="w-full bg-transparent text-2xl font-bold text-gray-800 dark:text-gray-100 focus:outline-none placeholder-gray-300 dark:placeholder-gray-600"
           />
-          {fromInfo && (
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{fromInfo.flag} {fromInfo.code}</p>
-          )}
         </div>
 
         {/* Swap button */}
@@ -93,24 +87,19 @@ const CurrencyConverter = ({ rates }) => {
 
         {/* To card */}
         <div className="rounded-xl border border-[var(--primary-200)] dark:border-[var(--primary-800)] bg-[var(--primary-50)] dark:bg-[var(--primary-900)]/20 p-3">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-[var(--primary-500)] dark:text-[var(--primary-400)]">To</span>
-            <select
-              value={to}
-              onChange={(e) => setTo(e.target.value)}
-              className="bg-transparent text-sm text-gray-700 dark:text-gray-200 focus:outline-none border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5"
-            >
-              {available.map((c) => (
-                <option key={c.code} value={c.code}>{c.flag} {c.code}</option>
-              ))}
-            </select>
-          </div>
+          <span className="text-xs font-medium text-[var(--primary-500)] dark:text-[var(--primary-400)]">To</span>
+          <select
+            value={to}
+            onChange={(e) => setTo(e.target.value)}
+            className={`${selectClass} mt-1 mb-2`}
+          >
+            {available.map((c) => (
+              <option key={c.code} value={c.code}>{c.flag} {c.code}</option>
+            ))}
+          </select>
           <p className="text-2xl font-bold text-[var(--primary-700)] dark:text-[var(--primary-300)]">
             {parseFloat(amount) > 0 ? fmt(result, to) : '—'}
           </p>
-          {toInfo && (
-            <p className="text-xs text-[var(--primary-500)] dark:text-[var(--primary-400)] mt-1">{toInfo.flag} {toInfo.code}</p>
-          )}
         </div>
 
         {/* Rate hint */}
