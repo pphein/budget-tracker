@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowUpDownIcon } from '@heroicons/react/24/outline';
+import { ArrowsUpDownIcon } from '@heroicons/react/24/outline';
 
 const CURRENCIES = [
   { code: 'USD', flag: '🇺🇸' },
@@ -80,7 +80,7 @@ const CurrencyConverter = ({ rates }) => {
             onClick={swap}
             className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[var(--primary-500)] text-white text-xs font-medium active:bg-[var(--primary-600)] transition-colors shadow-sm"
           >
-            <ArrowUpDownIcon className="w-3.5 h-3.5" />
+            <ArrowsUpDownIcon className="w-3.5 h-3.5" />
             Swap
           </button>
         </div>
