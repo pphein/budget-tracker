@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowsUpDownIcon } from '@heroicons/react/24/outline';
+import { ArrowsRightLeftIcon } from '@heroicons/react/24/outline';
 
 const CURRENCIES = [
   { code: 'USD', flag: '🇺🇸' },
@@ -22,9 +22,6 @@ const fmt = (n, code) => {
   }).format(n);
 };
 
-const selectClass =
-  'px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 focus:outline-none w-[130px]';
-
 const CurrencyConverter = ({ rates }) => {
   const [amount, setAmount] = useState('1');
   const [from,   setFrom]   = useState('USD');
@@ -40,83 +37,69 @@ const CurrencyConverter = ({ rates }) => {
   const result   = parseFloat(amount || 0) * (toRate / fromRate);
   const rate1    = toRate / fromRate;
 
-  const fromInfo = available.find((c) => c.code === from);
-  const toInfo   = available.find((c) => c.code === to);
-
   const swap = () => { setFrom(to); setTo(from); };
 
   return (
     <div className="px-2 sm:px-4 max-w-6xl mx-auto mt-2">
       <div className="bg-white dark:bg-gray-900 rounded-xl p-4 shadow-sm">
-        <h3 className="text-sm font-semibold text-[var(--primary-600)] dark:text-[var(--primary-400)] mb-4">
+        <h3 className="text-sm font-semibold text-[var(--primary-600)] dark:text-[var(--primary-400)] mb-3">
           Currency Converter
         </h3>
 
-        {/* From card */}
-        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 p-3">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-gray-400 dark:text-gray-500">From</span>
-            <select
-              value={from}
-              onChange={(e) => setFrom(e.target.value)}
-              className={selectClass}
-            >
-              {available.map((c) => (
-                <option key={c.code} value={c.code}>{c.flag} {c.code}</option>
-              ))}
-            </select>
-          </div>
+        <div className="flex items-center gap-2">
+          {/* Amount */}
           <input
             type="number"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            placeholder="0"
+            className="w-20 min-w-0 px-2 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none"
+            placeholder="1"
             min="0"
-            className="w-full bg-transparent text-2xl font-bold text-gray-800 dark:text-gray-100 focus:outline-none placeholder-gray-300 dark:placeholder-gray-600"
           />
-          {fromInfo && (
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{fromInfo.flag} {fromInfo.code}</p>
-          )}
-        </div>
 
-        {/* Swap button */}
-        <div className="flex justify-center my-2">
+          {/* From */}
+          <select
+            value={from}
+            onChange={(e) => setFrom(e.target.value)}
+            className="flex-1 min-w-0 px-2 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none"
+          >
+            {available.map((c) => (
+              <option key={c.code} value={c.code}>{c.flag} {c.code}</option>
+            ))}
+          </select>
+
+          {/* Swap */}
           <button
             onClick={swap}
-            className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[var(--primary-500)] text-white text-xs font-medium active:bg-[var(--primary-600)] transition-colors shadow-sm"
+            className="p-2.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 active:bg-gray-200 dark:active:bg-gray-700 flex-shrink-0"
           >
-            <ArrowsUpDownIcon className="w-3.5 h-3.5" />
-            Swap
+            <ArrowsRightLeftIcon className="w-4 h-4" />
           </button>
+
+          {/* To */}
+          <select
+            value={to}
+            onChange={(e) => setTo(e.target.value)}
+            className="flex-1 min-w-0 px-2 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none"
+          >
+            {available.map((c) => (
+              <option key={c.code} value={c.code}>{c.flag} {c.code}</option>
+            ))}
+          </select>
         </div>
 
-        {/* To card */}
-        <div className="rounded-xl border border-[var(--primary-200)] dark:border-[var(--primary-800)] bg-[var(--primary-50)] dark:bg-[var(--primary-900)]/20 p-3">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-[var(--primary-500)] dark:text-[var(--primary-400)]">To</span>
-            <select
-              value={to}
-              onChange={(e) => setTo(e.target.value)}
-              className={selectClass}
-            >
-              {available.map((c) => (
-                <option key={c.code} value={c.code}>{c.flag} {c.code}</option>
-              ))}
-            </select>
-          </div>
-          <p className="text-2xl font-bold text-[var(--primary-700)] dark:text-[var(--primary-300)]">
-            {parseFloat(amount) > 0 ? fmt(result, to) : '—'}
-          </p>
-          {toInfo && (
-            <p className="text-xs text-[var(--primary-500)] dark:text-[var(--primary-400)] mt-1">{toInfo.flag} {toInfo.code}</p>
-          )}
-        </div>
-
-        {/* Rate hint */}
         {parseFloat(amount) > 0 && (
-          <p className="text-xs text-center text-gray-400 dark:text-gray-500 mt-2">
-            1 {from} = {fmt(rate1, to)} {to}
-          </p>
+          <div className="mt-3 px-3 py-2.5 bg-gray-50 dark:bg-gray-800 rounded-lg">
+            <p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">
+              {amount} {from} =
+            </p>
+            <p className="text-xl font-bold text-[var(--primary-700)] dark:text-[var(--primary-300)]">
+              {fmt(result, to)} <span className="text-sm font-medium">{to}</span>
+            </p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+              1 {from} = {fmt(rate1, to)} {to}
+            </p>
+          </div>
         )}
       </div>
     </div>
