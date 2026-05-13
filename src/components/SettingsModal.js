@@ -73,6 +73,8 @@ const SettingsModal = ({
   featureTemplates,     onToggleFeatureTemplates,
   featureBudgetLimits,  onToggleFeatureBudgetLimits,
   featureCSVImport,     onToggleFeatureCSVImport,
+  featureSearchNotes,   onToggleFeatureSearchNotes,
+  featureTagFilter,     onToggleFeatureTagFilter,
 }) => {
   const [pinEnabled,   setPinEnabled]   = useState(false);
   const [lockTimeout,  setLockTimeoutV] = useState(5);
@@ -391,6 +393,24 @@ const SettingsModal = ({
               <p className="text-xs text-gray-400 dark:text-gray-500">Quick converter using live exchange rates</p>
             </div>
             <Toggle enabled={showCurrencyConverter} onToggle={onToggleCurrencyConverter} />
+          </div>
+
+          {/* Search notes */}
+          <div className="flex items-center justify-between py-2 mb-4 border-b border-gray-100 dark:border-gray-800">
+            <div>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-200">Search Notes</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">Search bar to filter records by tag or note</p>
+            </div>
+            <Toggle enabled={featureSearchNotes} onToggle={onToggleFeatureSearchNotes} />
+          </div>
+
+          {/* Tag filter */}
+          <div className="flex items-center justify-between py-2 mb-4 border-b border-gray-100 dark:border-gray-800">
+            <div>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-200">Tag Filter</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">Multi-select tag filter on income/expense list</p>
+            </div>
+            <Toggle enabled={featureTagFilter} onToggle={onToggleFeatureTagFilter} />
           </div>
 
           {/* Recurring transactions */}

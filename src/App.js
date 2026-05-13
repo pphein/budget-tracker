@@ -128,6 +128,8 @@ const App = () => {
   const [featureTemplates,    setFeatureTemplates]    = useState(() => localStorage.getItem('featureTemplates')    === 'true');
   const [featureBudgetLimits, setFeatureBudgetLimits] = useState(() => localStorage.getItem('featureBudgetLimits') === 'true');
   const [featureCSVImport,    setFeatureCSVImport]    = useState(() => localStorage.getItem('featureCSVImport')    === 'true');
+  const [featureSearchNotes,  setFeatureSearchNotes]  = useState(() => localStorage.getItem('featureSearchNotes')  === 'true');
+  const [featureTagFilter,    setFeatureTagFilter]    = useState(() => localStorage.getItem('featureTagFilter')    === 'true');
   const [taxSettings, setTaxSettings]         = useState(getTaxSettings);
   const [notes, setNotes]                     = useState('');
   const [budgetLimits, setBudgetLimits]       = useState(() => getBudgetLimits());
@@ -266,6 +268,8 @@ const App = () => {
   const handleToggleFeatureTemplates    = (val) => { setFeatureTemplates(val);    localStorage.setItem('featureTemplates',    val); };
   const handleToggleFeatureBudgetLimits = (val) => { setFeatureBudgetLimits(val); localStorage.setItem('featureBudgetLimits', val); };
   const handleToggleFeatureCSVImport    = (val) => { setFeatureCSVImport(val);    localStorage.setItem('featureCSVImport',    val); };
+  const handleToggleFeatureSearchNotes  = (val) => { setFeatureSearchNotes(val);  localStorage.setItem('featureSearchNotes',  val); if (!val) setSearchQuery(''); };
+  const handleToggleFeatureTagFilter    = (val) => { setFeatureTagFilter(val);    localStorage.setItem('featureTagFilter',    val); if (!val) setSelectedTags([]); };
 
   const handleTaxSettingsChange = (updated) => {
     const saved = saveTaxSettings(updated);
@@ -959,28 +963,32 @@ const App = () => {
             {/* Filter + records */}
             <div className="bg-white dark:bg-gray-900 rounded-xl p-3 shadow-sm">
               {/* Search */}
-              <div className="flex items-center gap-2 px-3 py-2 mb-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700">
-                <MagnifyingGlassIcon className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search tag or note…"
-                  className="flex-1 bg-transparent text-sm text-gray-800 dark:text-gray-200 focus:outline-none placeholder-gray-400 dark:placeholder-gray-500"
-                />
-                {searchQuery && (
-                  <button onClick={() => setSearchQuery('')} className="text-gray-400 flex-shrink-0">
-                    <XMarkIcon className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
+              {featureSearchNotes && (
+                <div className="flex items-center gap-2 px-3 py-2 mb-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700">
+                  <MagnifyingGlassIcon className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search tag or note…"
+                    className="flex-1 bg-transparent text-sm text-gray-800 dark:text-gray-200 focus:outline-none placeholder-gray-400 dark:placeholder-gray-500"
+                  />
+                  {searchQuery && (
+                    <button onClick={() => setSearchQuery('')} className="text-gray-400 flex-shrink-0">
+                      <XMarkIcon className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              )}
 
-              <Filter
-                tags={tags}
-                allTags={allTags}
-                selectedTags={selectedTags}
-                setSelectedTags={setSelectedTags}
-              />
+              {featureTagFilter && (
+                <Filter
+                  tags={tags}
+                  allTags={allTags}
+                  selectedTags={selectedTags}
+                  setSelectedTags={setSelectedTags}
+                />
+              )}
               {loading ? (
                 <SkeletonRows count={4} />
               ) : (
@@ -1158,6 +1166,8 @@ const App = () => {
         featureTemplates={featureTemplates}         onToggleFeatureTemplates={handleToggleFeatureTemplates}
         featureBudgetLimits={featureBudgetLimits}   onToggleFeatureBudgetLimits={handleToggleFeatureBudgetLimits}
         featureCSVImport={featureCSVImport}         onToggleFeatureCSVImport={handleToggleFeatureCSVImport}
+        featureSearchNotes={featureSearchNotes}     onToggleFeatureSearchNotes={handleToggleFeatureSearchNotes}
+        featureTagFilter={featureTagFilter}         onToggleFeatureTagFilter={handleToggleFeatureTagFilter}
       />
 
       <PinSetupModal
