@@ -17,6 +17,14 @@ import SettingsModal from './components/SettingsModal';
 import PinScreen from './components/PinScreen';
 import PinSetupModal from './components/PinSetupModal';
 import BalanceChart from './components/BalanceChart';
+import SavingsRateCard from './components/SavingsRateCard';
+import BudgetForecast from './components/BudgetForecast';
+import MonthComparison from './components/MonthComparison';
+import TopSpendingTags from './components/TopSpendingTags';
+import CashFlowCalendar from './components/CashFlowCalendar';
+import IncomeStabilityCard from './components/IncomeStabilityCard';
+import RecurringVsOneOff from './components/RecurringVsOneOff';
+import TagExpenseHeatmap from './components/TagExpenseHeatmap';
 import SkeletonRows from './components/SkeletonRows';
 import TagSelect from './components/TagSelect';
 import NumPad from './components/NumPad';
@@ -1012,6 +1020,26 @@ const App = () => {
           <HabitsCard transactions={transactions} />
           <SavingsGoals goals={goals} transactions={transactions} onManage={() => setIsGoalsOpen(true)} />
           <TagTrendChart transactions={transactions} allTags={allTags} />
+
+          {/* ── New tracking features ── */}
+          <div className="flex gap-3 mb-3">
+            <SavingsRateCard transactions={transactions} filterYears={filterYears} filterMonths={filterMonths} />
+            <BudgetForecast  transactions={transactions} filterYears={filterYears} filterMonths={filterMonths} budgetLimits={budgetLimits} />
+          </div>
+          <MonthComparison transactions={transactions} filterYears={filterYears} filterMonths={filterMonths} />
+          <div className="mb-3" />
+          <TopSpendingTags transactions={transactions} allTags={allTags} filterYears={filterYears} filterMonths={filterMonths} />
+          <div className="mb-3" />
+          {featureRecurring && (
+            <RecurringVsOneOff transactions={transactions} filterYears={filterYears} filterMonths={filterMonths} />
+          )}
+          <div className="mb-3" />
+          <IncomeStabilityCard transactions={transactions} />
+          <div className="mb-3" />
+          <CashFlowCalendar transactions={transactions} filterYears={filterYears} filterMonths={filterMonths} />
+          <div className="mb-3" />
+          <TagExpenseHeatmap transactions={transactions} allTags={allTags} filterYears={filterYears} />
+          <div className="mb-3" />
           <div className="bg-white dark:bg-gray-900 rounded-xl p-3 shadow-sm">
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-base font-bold text-[var(--primary-600)] dark:text-[var(--primary-400)]">Balance</h2>
