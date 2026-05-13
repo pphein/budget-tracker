@@ -1080,15 +1080,11 @@ const App = () => {
                       <th className="border border-gray-300 dark:border-gray-600 p-2 text-right">Income</th>
                       <th className="border border-gray-300 dark:border-gray-600 p-2 text-right">Expense</th>
                       <th className="border border-gray-300 dark:border-gray-600 p-2 text-right">Net</th>
-                      <th className="border border-gray-300 dark:border-gray-600 p-2 text-right">Balance</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {(() => {
-                      let carryOver = 0;
-                      return balanceData.map((row) => {
+                    {balanceData.map((row) => {
                         const net = row.income - row.expense;
-                        carryOver += net;
                         return (
                           <tr key={row.date} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                             <td className="border border-gray-300 dark:border-gray-600 p-2 text-gray-700 dark:text-gray-300 whitespace-nowrap">
@@ -1101,13 +1097,9 @@ const App = () => {
                             <td className={`border border-gray-300 dark:border-gray-600 p-2 text-right font-bold ${net >= 0 ? 'text-[var(--primary-600)] dark:text-[var(--primary-400)]' : 'text-red-600 dark:text-red-400'}`}>
                               {new Intl.NumberFormat().format(net)}
                             </td>
-                            <td className={`border border-gray-300 dark:border-gray-600 p-2 text-right text-xs ${carryOver >= 0 ? 'text-[var(--primary-600)] dark:text-[var(--primary-400)]' : 'text-red-600 dark:text-red-400'}`}>
-                              {new Intl.NumberFormat().format(carryOver)}
-                            </td>
                           </tr>
                         );
-                      });
-                    })()}
+                      })}
                   </tbody>
                   <tfoot>
                     <tr className="bg-gray-100 dark:bg-gray-700 font-bold text-gray-700 dark:text-gray-200">
@@ -1117,7 +1109,6 @@ const App = () => {
                       <td className={`border border-gray-300 dark:border-gray-600 p-2 text-right ${(balanceTotals.income - balanceTotals.expense) >= 0 ? 'text-[var(--primary-600)] dark:text-[var(--primary-400)]' : 'text-red-600 dark:text-red-400'}`}>
                         {new Intl.NumberFormat().format(balanceTotals.income - balanceTotals.expense)}
                       </td>
-                      <td className="border border-gray-300 dark:border-gray-600 p-2" />
                     </tr>
                   </tfoot>
                 </table>
