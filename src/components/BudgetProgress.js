@@ -1,6 +1,7 @@
 import React from 'react';
 
-const fmt = (n) => new Intl.NumberFormat().format(Math.round(n));
+const intlFmt = new Intl.NumberFormat();
+const fmt = (n) => intlFmt.format(Math.round(n));
 
 const BudgetProgress = ({ expenseByTag, limits }) => {
   const entries = Object.entries(limits).filter(([, lim]) => lim > 0);
@@ -42,4 +43,4 @@ const BudgetProgress = ({ expenseByTag, limits }) => {
   );
 };
 
-export default BudgetProgress;
+export default React.memo(BudgetProgress);

@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef, forwardRef } from 'react';
 import { Cog6ToothIcon, ArrowDownTrayIcon } from '@heroicons/react/20/solid';
 import { ChevronRightIcon, MagnifyingGlassIcon, XMarkIcon, CameraIcon } from '@heroicons/react/24/outline';
-import * as XLSX from 'xlsx';
-import { saveAs } from 'file-saver';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
@@ -77,7 +75,8 @@ const DateBtn = forwardRef(({ value, onClick, className }, ref) => (
 
 
 const compressImage = (file) =>
-  new Promise((resolve) => {
+  new Promise((resolve, reject) => {
+    if (!file.type.startsWith('image/')) { reject(new Error('Not an image')); return; }
     const reader = new FileReader();
     reader.onload = (e) => {
       const img = new Image();
@@ -93,6 +92,7 @@ const compressImage = (file) =>
         canvas.getContext('2d').drawImage(img, 0, 0, width, height);
         resolve(canvas.toDataURL('image/jpeg', 0.7));
       };
+      img.onerror = () => reject(new Error('Failed to load image'));
       img.src = e.target.result;
     };
     reader.readAsDataURL(file);
@@ -321,7 +321,8 @@ const App = () => {
   // ─── Helpers ──────────────────────────────────────────────────────────────
   const showToast = (message, type = 'success') => setToast({ message, type });
 
-  const exportBalance = () => {
+  const exportBalance = async () => {
+    const [XLSX, { saveAs }] = await Promise.all([import('xlsx'), import('file-saver')]);
     const rows = balanceData.map((row) => ({
       Date:    row.date,
       Income:  row.income,
@@ -828,7 +829,13 @@ const App = () => {
                   className="hidden"
                   onChange={async (e) => {
                     const file = e.target.files?.[0];
-                    if (file) setAttachment(await compressImage(file));
+                    if (file) {
+                      try {
+                        setAttachment(await compressImage(file));
+                      } catch {
+                        showInfo('Please select a valid image file.');
+                      }
+                    }
                     e.target.value = '';
                   }}
                 />

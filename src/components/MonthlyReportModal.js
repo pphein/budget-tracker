@@ -2,8 +2,10 @@ import React, { useState, useRef } from 'react';
 import { XMarkIcon, PrinterIcon } from '@heroicons/react/24/outline';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
-const fmt  = (n) => new Intl.NumberFormat().format(Math.round(Math.abs(n)));
-const fmtS = (n) => new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(n);
+const intlFmt  = new Intl.NumberFormat();
+const intlFmtS = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 });
+const fmt  = (n) => intlFmt.format(Math.round(Math.abs(n)));
+const fmtS = (n) => intlFmtS.format(n);
 const pctChange = (cur, prev) => prev > 0 ? (((cur - prev) / prev) * 100).toFixed(1) : null;
 const DAY_NAMES    = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const MONTH_LABELS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];

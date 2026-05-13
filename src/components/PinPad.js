@@ -5,8 +5,8 @@ import { PIN_LENGTH } from '../utils/pin';
 // Layout: 1-9, blank, 0, backspace
 const KEYS = ['1','2','3','4','5','6','7','8','9','','0','del'];
 
-const PinPad = ({ digits, onKey, shake, error, title, subtitle }) => (
-  <div className="flex flex-col items-center">
+const PinPad = ({ digits, onKey, shake, error, title, subtitle, disabled }) => (
+  <div className={`flex flex-col items-center ${disabled ? 'opacity-40 pointer-events-none' : ''}`}>
     {/* Title */}
     <p className="text-gray-300 text-sm font-medium mb-6">{title}</p>
 

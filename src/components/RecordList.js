@@ -1,6 +1,4 @@
-import React, { useState, useRef } from 'react';
-import { saveAs } from 'file-saver';
-import * as XLSX from 'xlsx';
+import React, { useState, useRef, useMemo } from 'react';
 import { ChevronUpIcon, ChevronDownIcon, BanknotesIcon, PencilIcon, TrashIcon, XMarkIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { getTagColorClasses } from '../utils/tagColors';
 
@@ -11,7 +9,8 @@ const SortIcon = ({ column, sortKey, sortDir }) => {
     : <ChevronDownIcon className="w-3 h-3 inline ml-1 text-[var(--primary-500)]" />;
 };
 
-const fmt = (n) => new Intl.NumberFormat().format(n);
+const intlFmt = new Intl.NumberFormat();
+const fmt = (n) => intlFmt.format(n);
 
 const RecordList = ({ type, records, allTags, handleDeleteTransaction, handleEditTransaction, formatDateTime }) => {
   const [sortKey, setSortKey]           = useState('date');
@@ -25,7 +24,7 @@ const RecordList = ({ type, records, allTags, handleDeleteTransaction, handleEdi
     else { setSortKey(key); setSortDir('asc'); }
   };
 
-  const sorted = [...records].sort((a, b) => {
+  const sorted = useMemo(() => [...records].sort((a, b) => {
     let av = a[sortKey];
     let bv = b[sortKey];
     if (sortKey === 'date')   { av = new Date(av); bv = new Date(bv); }
@@ -33,18 +32,22 @@ const RecordList = ({ type, records, allTags, handleDeleteTransaction, handleEdi
     if (av < bv) return sortDir === 'asc' ? -1 : 1;
     if (av > bv) return sortDir === 'asc' ?  1 : -1;
     return 0;
-  });
+  }), [records, sortKey, sortDir]);
 
-  const totalAmount = sorted.reduce((sum, r) => sum + Number(r.amount), 0);
+  const totalAmount = useMemo(
+    () => sorted.reduce((sum, r) => sum + Number(r.amount), 0),
+    [sorted]
+  );
 
-  const getColor = (tagName) => {
-    if (!allTags) return null;
-    const found = allTags.find((t) => t.name === tagName);
-    return found ? getTagColorClasses(found.colorIndex) : null;
-  };
+  const tagColorMap = useMemo(() => {
+    if (!allTags) return {};
+    return Object.fromEntries(allTags.map((t) => [t.name, getTagColorClasses(t.colorIndex)]));
+  }, [allTags]);
+
+  const getColor = (tagName) => tagColorMap[tagName] ?? null;
 
   // Anomaly detection — flag records > mean + 2σ per tag (need ≥ 3 records per tag)
-  const anomalyIds = (() => {
+  const anomalyIds = useMemo(() => {
     const byTag = {};
     sorted.forEach((r) => {
       if (!byTag[r.tag]) byTag[r.tag] = [];
@@ -61,11 +64,23 @@ const RecordList = ({ type, records, allTags, handleDeleteTransaction, handleEdi
       });
     });
     return ids;
-  })();
+  }, [sorted]);
 
-  const exportToExcel = () => {
+  // Prefix formula characters to prevent spreadsheet injection
+  const sanitizeCell = (v) => {
+    if (typeof v !== 'string') return v;
+    return /^[=+\-@|]/.test(v) ? `'${v}` : v;
+  };
+
+  const exportToExcel = async () => {
+    const [XLSX, { saveAs }] = await Promise.all([import('xlsx'), import('file-saver')]);
     const worksheet = XLSX.utils.json_to_sheet(
-      sorted.map((r) => ({ Tag: r.tag, Amount: r.amount, Date: r.date, Note: r.notes || '' }))
+      sorted.map((r) => ({
+        Tag:    sanitizeCell(r.tag),
+        Amount: r.amount,
+        Date:   r.date,
+        Note:   sanitizeCell(r.notes || ''),
+      }))
     );
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Records');
@@ -306,4 +321,4 @@ const RecordList = ({ type, records, allTags, handleDeleteTransaction, handleEdi
   );
 };
 
-export default RecordList;
+export default React.memo(RecordList);

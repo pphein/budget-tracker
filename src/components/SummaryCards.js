@@ -1,6 +1,7 @@
 import React from 'react';
 
-const fmt = (n) => new Intl.NumberFormat().format(Math.abs(n));
+const intlFmt = new Intl.NumberFormat();
+const fmt = (n) => intlFmt.format(Math.abs(n));
 
 const SummaryCards = ({ transactions, activeTab, onTabChange }) => {
   const income  = transactions.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0);
@@ -48,4 +49,4 @@ const SummaryCards = ({ transactions, activeTab, onTabChange }) => {
   );
 };
 
-export default SummaryCards;
+export default React.memo(SummaryCards);
