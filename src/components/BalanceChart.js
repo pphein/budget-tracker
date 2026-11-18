@@ -20,7 +20,7 @@ const BalanceChart = ({ data, view = 'daily' }) => {
   if (!data || data.length === 0) return null;
 
   const chartData = data.map((row, i, arr) => {
-    const net    = row.income - row.expense;
+    // const net    = row.income - row.expense;
     const window = arr.slice(Math.max(0, i - 2), i + 1);
     const avgNet = Math.round(window.reduce((s, r) => s + r.income - r.expense, 0) / window.length);
     return {

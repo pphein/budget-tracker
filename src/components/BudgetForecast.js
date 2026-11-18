@@ -32,6 +32,7 @@ const BudgetForecast = ({ transactions, filterYears, filterMonths, budgetLimits 
   if (!data) return null;
 
   const { income, expense, projected, daysInMonth, elapsed, totalLimit, remaining } = data;
+  console.log("Income", income)
   const overPace = totalLimit > 0 && projected > totalLimit;
   const dayPct   = daysInMonth > 0 ? (elapsed / daysInMonth) * 100 : 0;
 
