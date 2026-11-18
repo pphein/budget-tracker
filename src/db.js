@@ -26,9 +26,11 @@ export const addTag           = (...a) => store().addTag(...a);
 export const editTag          = (...a) => store().editTag(...a);
 export const deleteTag        = (...a) => store().deleteTag(...a);
 export const syncDefaultTags  = (...a) => store().syncDefaultTags(...a);
+export const clearTags        = (...a) => store().clearTags(...a);
 
 // ── Transactions ───────────────────────────────────────────────────────────────
 export const getTransactions  = (...a) => store().getTransactions(...a);
 export const addTransaction   = (...a) => store().addTransaction(...a);
 export const editTransaction  = (...a) => store().editTransaction(...a);
 export const deleteTransaction= (...a) => store().deleteTransaction(...a);
+export const clearTransactions= (...a) => store().clearTransactions(...a);

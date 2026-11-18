@@ -1,46 +1,12 @@
 import React, { useMemo } from 'react';
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import { calcIncomeStability } from '../utils/financialHealth';
 
 const intlFmt = new Intl.NumberFormat();
 const fmt = (n) => intlFmt.format(Math.round(n));
 
 const IncomeStabilityCard = ({ transactions }) => {
-  const data = useMemo(() => {
-    const now    = new Date();
-    const months = [];
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      months.push({
-        year:  d.getFullYear(),
-        month: d.getMonth() + 1,
-        label: d.toLocaleDateString('en-US', { month: 'short' }),
-      });
-    }
-
-    const monthly = months.map(({ year, month, label }) => {
-      const income = transactions
-        .filter((t) => {
-          if (t.type !== 'income') return false;
-          const d = new Date(t.date);
-          return d.getFullYear() === year && d.getMonth() + 1 === month;
-        })
-        .reduce((s, t) => s + parseFloat(t.amount || 0), 0);
-      return { year, month, label, income };
-    });
-
-    const withData = monthly.filter((m) => m.income > 0);
-    if (withData.length < 3) return null;
-
-    const avg  = withData.reduce((s, m) => s + m.income, 0) / withData.length;
-    const max  = Math.max(...monthly.map((m) => m.income));
-    const flags = monthly.filter((m) => m.income > 0 && m.income < avg * 0.8);
-
-    const last = monthly[monthly.length - 1];
-    const prev = monthly[monthly.length - 2];
-    const trend = prev.income > 0 ? ((last.income - prev.income) / prev.income) * 100 : null;
-
-    return { monthly, avg, max, flags, trend, last };
-  }, [transactions]);
+  const data = useMemo(() => calcIncomeStability(transactions), [transactions]);
 
   if (!data) return null;
 

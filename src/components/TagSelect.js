@@ -2,9 +2,12 @@ import React, { useState } from 'react';
 import { XMarkIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { CheckIcon } from '@heroicons/react/20/solid';
 import { getTagColorClasses } from '../utils/tagColors';
+import { useLanguage } from '../i18n/LanguageContext';
 
 // Single-select tag picker — opens a bottom-sheet modal with a tag grid
-const TagSelect = ({ tags, value, onChange, placeholder = 'Select a tag…' }) => {
+const TagSelect = ({ tags, value, onChange, placeholder }) => {
+  const { t } = useLanguage();
+  const placeholderText = placeholder ?? t('form.selectTag');
   const [open, setOpen] = useState(false);
 
   const selected      = tags.find((t) => t.name === value);
@@ -29,7 +32,7 @@ const TagSelect = ({ tags, value, onChange, placeholder = 'Select a tag…' }) =
             {selected.name}
           </span>
         ) : (
-          <span className="text-gray-400">{placeholder}</span>
+          <span className="text-gray-400">{placeholderText}</span>
         )}
         <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
           <ChevronDownIcon className="w-4 h-4 text-gray-400" />
@@ -49,7 +52,7 @@ const TagSelect = ({ tags, value, onChange, placeholder = 'Select a tag…' }) =
           <div className="relative bg-white dark:bg-gray-900 rounded-2xl flex flex-col w-full max-w-sm max-h-[72vh]">
             {/* Header */}
             <div className="flex items-center justify-between px-4 pt-4 pb-3 flex-shrink-0">
-              <h3 className="text-base font-semibold text-gray-800 dark:text-white">Select Tag</h3>
+              <h3 className="text-base font-semibold text-gray-800 dark:text-white">{t('form.selectTag')}</h3>
               <button
                 onClick={() => setOpen(false)}
                 className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"

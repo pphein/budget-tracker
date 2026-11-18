@@ -3,6 +3,8 @@ import { XMarkIcon, PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/
 import {
   getRecurring, addRecurring, editRecurring, deleteRecurring,
 } from '../utils/recurring';
+import { DEFAULT_ACCOUNT_ID } from '../utils/accounts';
+import AccountSelect from './AccountSelect';
 
 const FREQUENCIES = [
   { value: 'daily',   label: 'Daily'   },
@@ -16,10 +18,10 @@ const today = () => new Date().toISOString().slice(0, 10);
 
 const EMPTY_FORM = {
   type: 'expense', tag: '', amount: '', frequency: 'monthly',
-  nextDate: today(), notes: '',
+  nextDate: today(), notes: '', accountId: DEFAULT_ACCOUNT_ID,
 };
 
-const RecurringModal = ({ isOpen, onClose, allTags }) => {
+const RecurringModal = ({ isOpen, onClose, allTags, accounts, featureAccounts }) => {
   const [items,   setItems]   = useState([]);
   const [showing, setShowing] = useState(false); // showing add/edit form
   const [editId,  setEditId]  = useState(null);
@@ -47,6 +49,7 @@ const RecurringModal = ({ isOpen, onClose, allTags }) => {
       frequency: form.frequency,
       nextDate:  form.nextDate,
       notes:     form.notes,
+      accountId: form.accountId || DEFAULT_ACCOUNT_ID,
     };
     if (editId != null) editRecurring(editId, data);
     else                addRecurring(data);
@@ -63,6 +66,7 @@ const RecurringModal = ({ isOpen, onClose, allTags }) => {
       frequency: item.frequency,
       nextDate:  item.nextDate,
       notes:     item.notes || '',
+      accountId: item.accountId || DEFAULT_ACCOUNT_ID,
     });
     setShowing(true);
   };
@@ -175,6 +179,11 @@ const RecurringModal = ({ isOpen, onClose, allTags }) => {
               placeholder="Note (optional)"
               className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none"
             />
+
+            {/* Account */}
+            {featureAccounts && (
+              <AccountSelect accounts={accounts || []} value={form.accountId} onChange={(id) => set('accountId', id)} />
+            )}
 
             {/* Actions */}
             <div className="flex gap-2 pt-1">

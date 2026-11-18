@@ -3,6 +3,7 @@ import { XMarkIcon, CameraIcon } from '@heroicons/react/24/outline';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import TagSelect from './TagSelect';
+import AccountSelect from './AccountSelect';
 import NumPad from './NumPad';
 
 const compressImage = (file) =>
@@ -33,12 +34,13 @@ const DateBtn = forwardRef(({ value, onClick, className }, ref) => (
   </button>
 ));
 
-const EditTransactionModal = ({ isOpen, onClose, onSave, transaction, tags }) => {
+const EditTransactionModal = ({ isOpen, onClose, onSave, transaction, tags, accounts, featureAccounts }) => {
   const [amount,     setAmount]     = useState('');
   const [tag,        setTag]        = useState('');
   const [date,       setDate]       = useState(null);
   const [notes,      setNotes]      = useState('');
   const [attachment, setAttachment] = useState('');
+  const [accountId,  setAccountId]  = useState('cash');
   const attachInputRef = useRef(null);
 
   useEffect(() => {
@@ -48,12 +50,13 @@ const EditTransactionModal = ({ isOpen, onClose, onSave, transaction, tags }) =>
       setDate(transaction.date ? new Date(transaction.date) : new Date());
       setNotes(transaction.notes ?? '');
       setAttachment(transaction.attachment ?? '');
+      setAccountId(transaction.accountId ?? 'cash');
     }
   }, [transaction]);
 
   const handleSave = () => {
     if (!amount) return;
-    onSave(transaction.id, { amount: parseFloat(amount), tag, date: date?.toISOString(), notes, attachment });
+    onSave(transaction.id, { amount: parseFloat(amount), tag, date: date?.toISOString(), notes, attachment, accountId });
     onClose();
   };
 
@@ -85,6 +88,14 @@ const EditTransactionModal = ({ isOpen, onClose, onSave, transaction, tags }) =>
             <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Tag</label>
             <TagSelect tags={tags || []} value={tag} onChange={setTag} />
           </div>
+
+          {/* Account */}
+          {featureAccounts && (
+            <div>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Account</label>
+              <AccountSelect accounts={accounts || []} value={accountId} onChange={setAccountId} />
+            </div>
+          )}
 
           {/* Date */}
           <div>

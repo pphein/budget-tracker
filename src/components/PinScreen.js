@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { FingerPrintIcon } from '@heroicons/react/24/outline';
 import PinPad from './PinPad';
 import { verifyPin, PIN_LENGTH, MAX_FREE_ATTEMPTS, getFailCount, getLockoutRemaining } from '../utils/pin';
+import { isBiometricEnabled, isWebAuthnSupported, verifyBiometric } from '../utils/webauthn';
 
 const fmt = (ms) => {
   const s = Math.ceil(ms / 1000);
@@ -15,6 +17,23 @@ const PinScreen = ({ onUnlock }) => {
   const [checking,   setChecking]   = useState(false);
   const [lockoutMs,  setLockoutMs]  = useState(() => getLockoutRemaining());
   const [failCount,  setFailCount]  = useState(() => getFailCount());
+  const [biometricTrying, setBiometricTrying] = useState(false);
+
+  const biometricAvailable = isWebAuthnSupported() && isBiometricEnabled();
+
+  const attemptBiometric = useCallback(async () => {
+    if (biometricTrying || getLockoutRemaining() > 0) return;
+    setBiometricTrying(true);
+    const ok = await verifyBiometric();
+    setBiometricTrying(false);
+    if (ok) onUnlock();
+  }, [biometricTrying, onUnlock]);
+
+  // Prompt automatically once on mount, if enabled and not locked out.
+  useEffect(() => {
+    if (biometricAvailable && getLockoutRemaining() <= 0) attemptBiometric();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Countdown ticker while locked out
   useEffect(() => {
@@ -101,6 +120,17 @@ const PinScreen = ({ onUnlock }) => {
         subtitle={`${PIN_LENGTH}-digit PIN`}
         disabled={lockoutMs > 0}
       />
+
+      {biometricAvailable && lockoutMs <= 0 && (
+        <button
+          onClick={attemptBiometric}
+          disabled={biometricTrying}
+          className="mt-6 flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-900 border border-gray-700 text-gray-300 text-sm font-medium disabled:opacity-50"
+        >
+          <FingerPrintIcon className="w-5 h-5" />
+          {biometricTrying ? 'Checking…' : 'Use Biometric'}
+        </button>
+      )}
 
       {warnAttempts && (
         <p className={`mt-6 text-xs font-medium ${attemptsLeft === 1 ? 'text-red-400' : 'text-yellow-400'}`}>

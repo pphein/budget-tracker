@@ -5,16 +5,21 @@ import {
   MoonIcon,
   TagIcon,
   ArrowDownTrayIcon,
+  ArrowUpTrayIcon,
   CheckIcon,
   ArrowPathIcon,
   EyeIcon,
   EyeSlashIcon,
   LockClosedIcon,
+  TrashIcon,
+  QrCodeIcon,
 } from '@heroicons/react/24/outline';
 import { ChevronRightIcon } from '@heroicons/react/20/solid';
 import { COLOR_THEMES } from '../utils/colorTheme';
 import { getGoldApiKey, saveGoldApiKey, fetchWorldGoldPrice } from '../utils/goldPrice';
 import { isPinEnabled, getLockTimeout, setLockTimeout, disablePin } from '../utils/pin';
+import { isWebAuthnSupported, isBiometricEnabled, registerBiometric, disableBiometric } from '../utils/webauthn';
+import { useLanguage, LANGUAGES } from '../i18n/LanguageContext';
 import { TAX_COUNTRIES } from '../utils/taxCalculator';
 import { STORAGE_OPTIONS, getStorageType, setStorageType } from '../db';
 
@@ -62,11 +67,19 @@ const SettingsModal = ({
   onToggleOilChart,
   showCurrencyConverter,
   onToggleCurrencyConverter,
+  showHealthScore,
+  onToggleHealthScore,
   taxSettings,
   onTaxSettingsChange,
   onSetupPin,
   onChangePin,
   onStorageChange,
+  onBackup,
+  onRestore,
+  onOpenTrash,
+  trashCount,
+  onOpenQrShare,
+  onOpenQrImport,
   // Feature add-ons
   featureRecurring,     onToggleFeatureRecurring,
   featureSplit,         onToggleFeatureSplit,
@@ -75,8 +88,16 @@ const SettingsModal = ({
   featureCSVImport,     onToggleFeatureCSVImport,
   featureSearchNotes,   onToggleFeatureSearchNotes,
   featureTagFilter,     onToggleFeatureTagFilter,
+  featureAccounts,      onToggleFeatureAccounts,
+  onManageAccounts,
+  featureDebtTracker,   onToggleFeatureDebtTracker,
+  featureNetWorth,      onToggleFeatureNetWorth,
+  featureQuickAdd,      onToggleFeatureQuickAdd,
 }) => {
+  const { t, lang, setLang } = useLanguage();
   const [pinEnabled,   setPinEnabled]   = useState(false);
+  const [biometricEnabled, setBiometricEnabled] = useState(false);
+  const [biometricError, setBiometricError]     = useState('');
   const [lockTimeout,  setLockTimeoutV] = useState(5);
   const [storageType,  setStorageTypeV] = useState(() => getStorageType());
   const [worldInput, setWorldInput]     = useState('');
@@ -96,6 +117,8 @@ const SettingsModal = ({
       setFetchError('');
       setApiKey(getGoldApiKey());
       setPinEnabled(isPinEnabled());
+      setBiometricEnabled(isBiometricEnabled());
+      setBiometricError('');
       setLockTimeoutV(getLockTimeout());
       setStorageTypeV(getStorageType());
     }
@@ -105,9 +128,26 @@ const SettingsModal = ({
     if (pinEnabled) {
       disablePin();
       setPinEnabled(false);
+      disableBiometric();
+      setBiometricEnabled(false);
     } else {
       onClose();
       onSetupPin();
+    }
+  };
+
+  const handleToggleBiometric = async () => {
+    if (biometricEnabled) {
+      disableBiometric();
+      setBiometricEnabled(false);
+      return;
+    }
+    setBiometricError('');
+    try {
+      await registerBiometric();
+      setBiometricEnabled(true);
+    } catch (err) {
+      setBiometricError(err.message || 'Could not register biometric unlock on this device');
     }
   };
 
@@ -161,7 +201,7 @@ const SettingsModal = ({
     <div className="fixed inset-0 z-50 bg-white dark:bg-gray-900 flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-        <h2 className="text-lg font-bold text-gray-800 dark:text-white">Settings</h2>
+        <h2 className="text-lg font-bold text-gray-800 dark:text-white">{t('settings.title')}</h2>
         <button
           onClick={onClose}
           className="p-2 text-gray-500 dark:text-gray-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -175,7 +215,7 @@ const SettingsModal = ({
         {/* ── APPEARANCE ── */}
         <div className="px-4 pt-5 pb-4 border-b border-gray-100 dark:border-gray-800">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-4">
-            Appearance
+            {t('settings.appearance')}
           </h3>
 
           {/* Dark mode row */}
@@ -185,7 +225,7 @@ const SettingsModal = ({
                 ? <MoonIcon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                 : <SunIcon  className="w-5 h-5 text-gray-500 dark:text-gray-400" />}
               <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                {theme === 'dark' ? 'Dark Mode' : 'Light Mode'}
+                {theme === 'dark' ? t('settings.darkMode') : t('settings.lightMode')}
               </span>
             </div>
             <button
@@ -204,7 +244,7 @@ const SettingsModal = ({
           </div>
 
           {/* Accent color */}
-          <p className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">Accent Color</p>
+          <p className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">{t('settings.accentColor')}</p>
           <div className="grid grid-cols-4 gap-3">
             {COLOR_THEMES.map((t) => {
               const active = colorTheme === t.id;
@@ -225,6 +265,27 @@ const SettingsModal = ({
                     {active && <CheckIcon className="w-4 h-4 text-white" />}
                   </span>
                   <span className="text-xs font-medium text-gray-600 dark:text-gray-300">{t.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Language */}
+          <p className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3 mt-5">{t('settings.language')}</p>
+          <div className="grid grid-cols-2 gap-3">
+            {LANGUAGES.map((l) => {
+              const active = lang === l.id;
+              return (
+                <button
+                  key={l.id}
+                  onClick={() => setLang(l.id)}
+                  className={`flex items-center justify-center py-2.5 rounded-xl border-2 text-sm font-medium transition-all ${
+                    active
+                      ? 'border-[var(--primary-500)] text-[var(--primary-600)] dark:text-[var(--primary-400)]'
+                      : 'border-transparent bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:border-gray-200 dark:hover:border-gray-600'
+                  }`}
+                >
+                  {l.label}
                 </button>
               );
             })}
@@ -356,7 +417,7 @@ const SettingsModal = ({
         {/* ── ADD-ONS ── */}
         <div className="px-4 pt-5 pb-4 border-b border-gray-100 dark:border-gray-800">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-4">
-            Add-ons
+            {t('settings.addons')}
           </h3>
 
           {/* Gold price chart */}
@@ -395,6 +456,15 @@ const SettingsModal = ({
             <Toggle enabled={showCurrencyConverter} onToggle={onToggleCurrencyConverter} />
           </div>
 
+          {/* Financial health score */}
+          <div className="flex items-center justify-between py-2 mb-4 border-b border-gray-100 dark:border-gray-800">
+            <div>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('settings.healthScore')}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">Combined savings rate, stability &amp; budget grade</p>
+            </div>
+            <Toggle enabled={showHealthScore} onToggle={onToggleHealthScore} />
+          </div>
+
           {/* Search notes */}
           <div className="flex items-center justify-between py-2 mb-4 border-b border-gray-100 dark:border-gray-800">
             <div>
@@ -411,6 +481,51 @@ const SettingsModal = ({
               <p className="text-xs text-gray-400 dark:text-gray-500">Multi-select tag filter on income/expense list</p>
             </div>
             <Toggle enabled={featureTagFilter} onToggle={onToggleFeatureTagFilter} />
+          </div>
+
+          {/* Accounts / wallets */}
+          <div className="flex items-center justify-between py-2 mb-4 border-b border-gray-100 dark:border-gray-800">
+            <div>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('settings.accounts')}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">Track balances across Cash, Bank, etc.</p>
+            </div>
+            <Toggle enabled={featureAccounts} onToggle={onToggleFeatureAccounts} />
+          </div>
+          {featureAccounts && (
+            <button
+              onClick={() => { onClose(); onManageAccounts(); }}
+              className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors mb-4"
+            >
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('settings.manageAccounts')}</span>
+              <ChevronRightIcon className="w-4 h-4 text-gray-400" />
+            </button>
+          )}
+
+          {/* Debt / loan tracker */}
+          <div className="flex items-center justify-between py-2 mb-4 border-b border-gray-100 dark:border-gray-800">
+            <div>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('settings.debtTracker')}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">Track loan/debt payoff progress</p>
+            </div>
+            <Toggle enabled={featureDebtTracker} onToggle={onToggleFeatureDebtTracker} />
+          </div>
+
+          {/* Net worth */}
+          <div className="flex items-center justify-between py-2 mb-4 border-b border-gray-100 dark:border-gray-800">
+            <div>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('settings.netWorth')}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">Combine accounts, assets &amp; debts into one total</p>
+            </div>
+            <Toggle enabled={featureNetWorth} onToggle={onToggleFeatureNetWorth} />
+          </div>
+
+          {/* Quick add */}
+          <div className="flex items-center justify-between py-2 mb-4 border-b border-gray-100 dark:border-gray-800">
+            <div>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('settings.quickAdd')}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">Type e.g. "coffee 3000" to fill amount &amp; tag</p>
+            </div>
+            <Toggle enabled={featureQuickAdd} onToggle={onToggleFeatureQuickAdd} />
           </div>
 
           {/* Recurring transactions */}
@@ -502,14 +617,14 @@ const SettingsModal = ({
         {/* ── SECURITY ── */}
         <div className="px-4 pt-5 pb-4 border-b border-gray-100 dark:border-gray-800">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-4">
-            Security
+            {t('settings.security')}
           </h3>
 
           {/* PIN toggle */}
           <div className="flex items-center justify-between py-1 mb-3">
             <div className="flex items-center gap-3">
               <LockClosedIcon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-200">PIN Lock</span>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('settings.pinLock')}</span>
             </div>
             <button
               onClick={handleTogglePin}
@@ -530,13 +645,35 @@ const SettingsModal = ({
                 onClick={() => { onClose(); onChangePin(); }}
                 className="w-full flex items-center justify-between px-3 py-3 rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors mb-3"
               >
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Change PIN</span>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('settings.changePin')}</span>
                 <ChevronRightIcon className="w-4 h-4 text-gray-400" />
               </button>
 
+              {/* Biometric unlock (requires PIN as fallback) */}
+              {isWebAuthnSupported() && (
+                <div className="mb-3">
+                  <div className="flex items-center justify-between py-1">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('settings.biometricUnlock')}</span>
+                    <button
+                      onClick={handleToggleBiometric}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none ${
+                        biometricEnabled ? 'bg-[var(--primary-500)]' : 'bg-gray-300 dark:bg-gray-600'
+                      }`}
+                    >
+                      <span className={`inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                        biometricEnabled ? 'translate-x-6' : 'translate-x-1'
+                      }`} />
+                    </button>
+                  </div>
+                  {biometricError && (
+                    <p className="text-xs text-red-500 mt-1">{biometricError}</p>
+                  )}
+                </div>
+              )}
+
               {/* Auto-lock timeout */}
               <div>
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Auto-lock after</p>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">{t('settings.autoLockAfter')}</p>
                 <div className="flex rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
                   {LOCK_OPTIONS.map(({ label, value }) => (
                     <button
@@ -560,12 +697,12 @@ const SettingsModal = ({
         {/* ── DATA ── */}
         <div className="px-4 pt-5 pb-4 border-b border-gray-100 dark:border-gray-800">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-3">
-            Data
+            {t('settings.data')}
           </h3>
 
           {/* Storage type */}
           <div className="mb-4">
-            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Storage</p>
+            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">{t('settings.storage')}</p>
             <div className="flex rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
               {STORAGE_OPTIONS.map(({ value, label }) => (
                 <button
@@ -594,7 +731,64 @@ const SettingsModal = ({
           >
             <div className="flex items-center gap-3">
               <TagIcon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Manage Tags</span>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('settings.manageTags')}</span>
+            </div>
+            <ChevronRightIcon className="w-4 h-4 text-gray-400" />
+          </button>
+
+          <button
+            onClick={() => { onClose(); onBackup(); }}
+            className="w-full flex items-center justify-between px-3 py-3 rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors mt-2"
+          >
+            <div className="flex items-center gap-3">
+              <ArrowDownTrayIcon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('settings.backupData')}</span>
+            </div>
+            <ChevronRightIcon className="w-4 h-4 text-gray-400" />
+          </button>
+
+          <button
+            onClick={() => { onClose(); onRestore(); }}
+            className="w-full flex items-center justify-between px-3 py-3 rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors mt-2"
+          >
+            <div className="flex items-center gap-3">
+              <ArrowUpTrayIcon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('settings.restoreBackup')}</span>
+            </div>
+            <ChevronRightIcon className="w-4 h-4 text-gray-400" />
+          </button>
+
+          <button
+            onClick={() => { onClose(); onOpenTrash(); }}
+            className="w-full flex items-center justify-between px-3 py-3 rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors mt-2"
+          >
+            <div className="flex items-center gap-3">
+              <TrashIcon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                {t('settings.trash')}{trashCount > 0 ? ` (${trashCount})` : ''}
+              </span>
+            </div>
+            <ChevronRightIcon className="w-4 h-4 text-gray-400" />
+          </button>
+
+          <button
+            onClick={() => { onClose(); onOpenQrShare(); }}
+            className="w-full flex items-center justify-between px-3 py-3 rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors mt-2"
+          >
+            <div className="flex items-center gap-3">
+              <QrCodeIcon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('settings.shareSetup')}</span>
+            </div>
+            <ChevronRightIcon className="w-4 h-4 text-gray-400" />
+          </button>
+
+          <button
+            onClick={() => { onClose(); onOpenQrImport(); }}
+            className="w-full flex items-center justify-between px-3 py-3 rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors mt-2"
+          >
+            <div className="flex items-center gap-3">
+              <QrCodeIcon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('settings.importSetup')}</span>
             </div>
             <ChevronRightIcon className="w-4 h-4 text-gray-400" />
           </button>

@@ -1,3 +1,5 @@
+import { DEFAULT_ACCOUNT_ID } from './accounts';
+
 const KEY = 'bt_recurring';
 
 const load = () => {
@@ -50,11 +52,12 @@ export const processDueRecurring = () => {
     let cur = { ...r };
     while (cur.nextDate <= today) {
       toCreate.push({
-        type:   cur.type,
-        tag:    cur.tag,
-        amount: cur.amount,
-        notes:  cur.notes || '',
-        date:   new Date(cur.nextDate + 'T12:00:00').toISOString(),
+        type:      cur.type,
+        tag:       cur.tag,
+        amount:    cur.amount,
+        notes:     cur.notes || '',
+        date:      new Date(cur.nextDate + 'T12:00:00').toISOString(),
+        accountId: cur.accountId || DEFAULT_ACCOUNT_ID,
       });
       cur = { ...cur, nextDate: advanceDate(cur.nextDate, cur.frequency) };
     }

@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { XMarkIcon, PrinterIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, PrinterIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 const intlFmt  = new Intl.NumberFormat();
@@ -12,6 +12,11 @@ const MONTH_LABELS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct
 
 // Read a CSS variable from :root as a hex/rgb string
 const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+const hexToRgb = (hex) => {
+  const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex || '');
+  return m ? [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)] : [59, 130, 246];
+};
 
 const Section = ({ title }) => (
   <div className="flex items-center gap-2 mt-5 mb-3">
@@ -190,6 +195,65 @@ const MonthlyReportModal = ({ isOpen, onClose, transactions, filterYears, filter
     win.print();
   };
 
+  // ── Download PDF — a real file, not just the print dialog ─────────────────
+  const handleDownloadPdf = async () => {
+    const [{ default: jsPDF }, { applyPlugin }] = await Promise.all([import('jspdf'), import('jspdf-autotable')]);
+    applyPlugin(jsPDF);
+    const primaryHex = cssVar('--primary-500') || '#3b82f6';
+    const primary = hexToRgb(primaryHex);
+
+    const doc = new jsPDF();
+    doc.setFillColor(...primary);
+    doc.rect(0, 0, 210, 22, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(16);
+    doc.text(monthName, 14, 13);
+    doc.setFontSize(9);
+    doc.text(`${txCount} transaction${txCount !== 1 ? 's' : ''}`, 14, 19);
+
+    doc.autoTable({
+      startY: 28,
+      head: [['Metric', 'Value']],
+      body: [
+        ['Income', fmt(income)],
+        ['Expense', fmt(expense)],
+        ['Net', `${net < 0 ? '-' : ''}${fmt(net)}`],
+        ['Savings Rate', savings !== null ? `${savings.toFixed(1)}%` : '—'],
+      ],
+      theme: 'grid',
+      headStyles: { fillColor: primary },
+    });
+
+    if (topTags.length > 0) {
+      doc.autoTable({
+        startY: doc.lastAutoTable.finalY + 8,
+        head: [['Tag', 'Amount', '%']],
+        body: topTags.map(([name, val]) => [
+          name, fmt(val), expense > 0 ? `${((val / expense) * 100).toFixed(1)}%` : '0%',
+        ]),
+        theme: 'grid',
+        headStyles: { fillColor: primary },
+        margin: { top: 8 },
+      });
+    }
+
+    if (balanceRows.length > 0) {
+      let running = 0;
+      doc.autoTable({
+        startY: doc.lastAutoTable.finalY + 8,
+        head: [['Month', 'Income', 'Expense', 'Net', 'Balance']],
+        body: balanceRows.map((row) => {
+          running += row.net;
+          return [row.label, fmt(row.income), fmt(row.expense), `${row.net < 0 ? '-' : ''}${fmt(row.net)}`, `${running < 0 ? '-' : ''}${fmt(running)}`];
+        }),
+        theme: 'grid',
+        headStyles: { fillColor: primary },
+      });
+    }
+
+    doc.save(`report-${cy}-${String(cm).padStart(2, '0')}.pdf`);
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-white dark:bg-gray-900 flex flex-col">
       {/* Header */}
@@ -206,7 +270,13 @@ const MonthlyReportModal = ({ isOpen, onClose, transactions, filterYears, filter
             onClick={handlePrint}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-white text-xs font-medium"
           >
-            <PrinterIcon className="w-4 h-4" /> Print / PDF
+            <PrinterIcon className="w-4 h-4" /> Print
+          </button>
+          <button
+            onClick={handleDownloadPdf}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-white text-xs font-medium"
+          >
+            <ArrowDownTrayIcon className="w-4 h-4" /> PDF
           </button>
           <button
             onClick={onClose}

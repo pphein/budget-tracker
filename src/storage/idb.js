@@ -57,6 +57,11 @@ export const deleteTag = async (id) => {
   await db.delete('tags', id);
 };
 
+export const clearTags = async () => {
+  const db = await getDB();
+  await db.clear('tags');
+};
+
 export const syncDefaultTags = async () => {
   const db           = await getDB();
   const existing     = await db.getAll('tags');
@@ -76,12 +81,14 @@ export const getTransactions = async () => {
   return db.getAll('transactions');
 };
 
-export const addTransaction = async ({ type, tag, amount, date, notes, currency, origAmount, attachment }) => {
+export const addTransaction = async ({ type, tag, amount, date, notes, currency, origAmount, attachment, deletedAt, accountId }) => {
   const db = await getDB();
   const record = { type, tag, amount: parseFloat(amount), date, notes: notes || '' };
   if (currency)           record.currency   = currency;
   if (origAmount != null) record.origAmount  = origAmount;
   if (attachment)         record.attachment  = attachment;
+  if (deletedAt)          record.deletedAt   = deletedAt;
+  if (accountId)          record.accountId   = accountId;
   await db.add('transactions', record);
 };
 
@@ -95,4 +102,9 @@ export const editTransaction = async (id, updates) => {
 export const deleteTransaction = async (id) => {
   const db = await getDB();
   await db.delete('transactions', id);
+};
+
+export const clearTransactions = async () => {
+  const db = await getDB();
+  await db.clear('transactions');
 };

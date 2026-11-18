@@ -1,41 +1,12 @@
 import React, { useMemo } from 'react';
 import { ArrowTrendingUpIcon, ArrowTrendingDownIcon } from '@heroicons/react/24/outline';
+import { calcSavingsRate } from '../utils/financialHealth';
 
 const SavingsRateCard = ({ transactions, filterYears, filterMonths }) => {
-  const { rate, diff, income, expense } = useMemo(() => {
-    const filter = (years, months) =>
-      transactions.filter((t) => {
-        const d = new Date(t.date);
-        if (years.length && !years.includes(d.getFullYear())) return false;
-        if (months.length && !months.includes(d.getMonth() + 1)) return false;
-        return true;
-      });
-
-    const sum = (txns, type) =>
-      txns.filter((t) => t.type === type).reduce((s, t) => s + parseFloat(t.amount || 0), 0);
-
-    const curr = filter(filterYears, filterMonths);
-    const income  = sum(curr, 'income');
-    const expense = sum(curr, 'expense');
-    const rate    = income > 0 ? ((income - expense) / income) * 100 : null;
-
-    // Previous period
-    let prevYears = filterYears, prevMonths = filterMonths;
-    if (filterMonths.length === 1 && filterYears.length === 1) {
-      let m = filterMonths[0] - 1, y = filterYears[0];
-      if (m === 0) { m = 12; y -= 1; }
-      prevMonths = [m]; prevYears = [y];
-    } else if (filterYears.length === 1 && filterMonths.length === 0) {
-      prevYears = [filterYears[0] - 1]; prevMonths = [];
-    }
-    const prev     = filter(prevYears, prevMonths);
-    const pIncome  = sum(prev, 'income');
-    const pExpense = sum(prev, 'expense');
-    const prevRate = pIncome > 0 ? ((pIncome - pExpense) / pIncome) * 100 : null;
-    const diff     = rate !== null && prevRate !== null ? rate - prevRate : null;
-
-    return { rate, diff, income, expense };
-  }, [transactions, filterYears, filterMonths]);
+  const { rate, diff } = useMemo(
+    () => calcSavingsRate(transactions, filterYears, filterMonths),
+    [transactions, filterYears, filterMonths]
+  );
 
   if (rate === null) return null;
 

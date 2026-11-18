@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, forwardRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo, forwardRef } from 'react';
 import { Cog6ToothIcon, ArrowDownTrayIcon } from '@heroicons/react/20/solid';
 import { ChevronRightIcon, MagnifyingGlassIcon, XMarkIcon, CameraIcon } from '@heroicons/react/24/outline';
 import DatePicker from 'react-datepicker';
@@ -27,6 +27,9 @@ import RecurringVsOneOff from './components/RecurringVsOneOff';
 import TagExpenseHeatmap from './components/TagExpenseHeatmap';
 import SkeletonRows from './components/SkeletonRows';
 import TagSelect from './components/TagSelect';
+import AccountSelect from './components/AccountSelect';
+import AccountsModal from './components/AccountsModal';
+import AccountsSummary from './components/AccountsSummary';
 import NumPad from './components/NumPad';
 import { getInitialColorTheme, applyColorTheme } from './utils/colorTheme';
 import { getGoldPrices, saveGoldPrices } from './utils/goldPrice';
@@ -35,6 +38,18 @@ import { getTaxSettings, saveTaxSettings } from './utils/taxCalculator';
 import { isPinEnabled, shouldLockNow, recordActivity } from './utils/pin';
 import { getBudgetLimits } from './utils/budgetLimits';
 import { processDueRecurring } from './utils/recurring';
+import { getAccounts, addAccount, archiveAccount, unarchiveAccount, deleteAccount, DEFAULT_ACCOUNT_ID } from './utils/accounts';
+import { getDebts, addDebt, deleteDebt, logPayment } from './utils/debts';
+import DebtTracker from './components/DebtTracker';
+import DebtTrackerModal from './components/DebtTrackerModal';
+import { getAssets, addAsset, deleteAsset } from './utils/netWorth';
+import NetWorthCard from './components/NetWorthCard';
+import NetWorthModal from './components/NetWorthModal';
+import HealthScoreCard from './components/HealthScoreCard';
+import { parseQuickAdd } from './utils/quickAdd';
+import QRShareModal from './components/QRShareModal';
+import QRImportModal from './components/QRImportModal';
+import { useLanguage } from './i18n/LanguageContext';
 import GoldPriceBar from './components/GoldPriceBar';
 import ExchangeRateBar from './components/ExchangeRateBar';
 import GoldPriceChart from './components/GoldPriceChart';
@@ -52,6 +67,9 @@ import RemindersModal from './components/RemindersModal';
 import TemplatesModal from './components/TemplatesModal';
 import MonthlyReportModal from './components/MonthlyReportModal';
 import CSVImportModal from './components/CSVImportModal';
+import BackupExportModal from './components/BackupExportModal';
+import BackupRestoreModal from './components/BackupRestoreModal';
+import TrashModal from './components/TrashModal';
 import { getTemplates, addTemplate, deleteTemplate } from './utils/templates';
 import { getGoals, addGoal, deleteGoal } from './utils/goals';
 import { getReminders, addReminder, dismissReminder, deleteReminder } from './utils/reminders';
@@ -107,12 +125,18 @@ const compressImage = (file) =>
   });
 
 const App = () => {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab]       = useState('income');
   const [transactions, setTransactions] = useState([]);
+  const [trashedTransactions, setTrashedTransactions] = useState([]);
+  const [accounts, setAccounts] = useState(() => getAccounts());
+  const [debts, setDebts] = useState(() => getDebts());
+  const [assets, setAssets] = useState(() => getAssets());
   const [allTags, setAllTags]           = useState([]);
   const [tags, setTags]                 = useState([]);
   const [tag, setTag]                   = useState('');
   const [amount, setAmount]             = useState('');
+  const [quickAddText, setQuickAddText] = useState('');
   const [date, setDate]                 = useState(new Date());
   const [selectedTags, setSelectedTags] = useState([]);
   const [filterYears, setFilterYears]   = useState([new Date().getFullYear()]);
@@ -131,6 +155,7 @@ const App = () => {
   const [showExchangeChart, setShowExchangeChart] = useState(() => localStorage.getItem('showExchangeChart') === 'true');
   const [showOilChart, setShowOilChart]                   = useState(() => localStorage.getItem('showOilChart') === 'true');
   const [showCurrencyConverter, setShowCurrencyConverter] = useState(() => localStorage.getItem('showCurrencyConverter') === 'true');
+  const [showHealthScore, setShowHealthScore] = useState(() => localStorage.getItem('showHealthScore') === 'true');
   const [featureRecurring,    setFeatureRecurring]    = useState(() => localStorage.getItem('featureRecurring')    === 'true');
   const [featureSplit,        setFeatureSplit]        = useState(() => localStorage.getItem('featureSplit')        === 'true');
   const [featureTemplates,    setFeatureTemplates]    = useState(() => localStorage.getItem('featureTemplates')    === 'true');
@@ -138,6 +163,10 @@ const App = () => {
   const [featureCSVImport,    setFeatureCSVImport]    = useState(() => localStorage.getItem('featureCSVImport')    === 'true');
   const [featureSearchNotes,  setFeatureSearchNotes]  = useState(() => localStorage.getItem('featureSearchNotes')  === 'true');
   const [featureTagFilter,    setFeatureTagFilter]    = useState(() => localStorage.getItem('featureTagFilter')    === 'true');
+  const [featureAccounts,     setFeatureAccounts]     = useState(() => localStorage.getItem('featureAccounts')     === 'true');
+  const [featureDebtTracker,  setFeatureDebtTracker]  = useState(() => localStorage.getItem('featureDebtTracker')  === 'true');
+  const [featureNetWorth,     setFeatureNetWorth]     = useState(() => localStorage.getItem('featureNetWorth')     === 'true');
+  const [featureQuickAdd,     setFeatureQuickAdd]     = useState(() => localStorage.getItem('featureQuickAdd')     === 'true');
   const [taxSettings, setTaxSettings]         = useState(getTaxSettings);
   const [notes, setNotes]                     = useState('');
   const [budgetLimits, setBudgetLimits]       = useState(() => getBudgetLimits());
@@ -163,6 +192,7 @@ const App = () => {
 
   const [searchQuery, setSearchQuery]       = useState('');
   const [txCurrency, setTxCurrency]         = useState('MMK');
+  const [selectedAccountId, setSelectedAccountId] = useState(() => localStorage.getItem('lastAccountId') || DEFAULT_ACCOUNT_ID);
   const [attachment, setAttachment]         = useState('');
   const [splitMode, setSplitMode]           = useState(false);
   const [splitRows, setSplitRows]           = useState([{ tag: '', amount: '' }, { tag: '', amount: '' }]);
@@ -174,6 +204,14 @@ const App = () => {
   const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
   const [isReportOpen, setIsReportOpen]     = useState(false);
   const [isCSVOpen, setIsCSVOpen]           = useState(false);
+  const [isBackupOpen, setIsBackupOpen]     = useState(false);
+  const [isRestoreOpen, setIsRestoreOpen]   = useState(false);
+  const [isTrashOpen, setIsTrashOpen]       = useState(false);
+  const [isQrShareOpen, setIsQrShareOpen]   = useState(false);
+  const [isQrImportOpen, setIsQrImportOpen] = useState(false);
+  const [isAccountsOpen, setIsAccountsOpen] = useState(false);
+  const [isDebtTrackerOpen, setIsDebtTrackerOpen] = useState(false);
+  const [isNetWorthOpen, setIsNetWorthOpen] = useState(false);
   const [overdueReminders, setOverdueReminders] = useState([]);
 
   const tabs          = ['income', 'expense', 'balance'];
@@ -214,6 +252,18 @@ const App = () => {
   const handleChangePin = () => {
     setPinSetupMode('change');
     setIsPinSetupOpen(true);
+  };
+
+  const handleBackup = () => setIsBackupOpen(true);
+  const handleRestore = () => setIsRestoreOpen(true);
+  const handleOpenTrash = () => setIsTrashOpen(true);
+  const handleOpenQrShare = () => setIsQrShareOpen(true);
+  const handleOpenQrImport = () => setIsQrImportOpen(true);
+  const handleQrImported = async () => {
+    await reloadTags();
+    setAccounts(getAccounts());
+    setBudgetLimits(getBudgetLimits());
+    showToast('Setup imported');
   };
 
   const handlePinSetupSuccess = () => {
@@ -271,6 +321,11 @@ const App = () => {
     localStorage.setItem('showCurrencyConverter', val);
   };
 
+  const handleToggleHealthScore = (val) => {
+    setShowHealthScore(val);
+    localStorage.setItem('showHealthScore', val);
+  };
+
   const handleToggleFeatureRecurring    = (val) => { setFeatureRecurring(val);    localStorage.setItem('featureRecurring',    val); };
   const handleToggleFeatureSplit        = (val) => { setFeatureSplit(val);        localStorage.setItem('featureSplit',        val); };
   const handleToggleFeatureTemplates    = (val) => { setFeatureTemplates(val);    localStorage.setItem('featureTemplates',    val); };
@@ -278,6 +333,10 @@ const App = () => {
   const handleToggleFeatureCSVImport    = (val) => { setFeatureCSVImport(val);    localStorage.setItem('featureCSVImport',    val); };
   const handleToggleFeatureSearchNotes  = (val) => { setFeatureSearchNotes(val);  localStorage.setItem('featureSearchNotes',  val); if (!val) setSearchQuery(''); };
   const handleToggleFeatureTagFilter    = (val) => { setFeatureTagFilter(val);    localStorage.setItem('featureTagFilter',    val); if (!val) setSelectedTags([]); };
+  const handleToggleFeatureAccounts     = (val) => { setFeatureAccounts(val);     localStorage.setItem('featureAccounts',     val); };
+  const handleToggleFeatureDebtTracker  = (val) => { setFeatureDebtTracker(val);  localStorage.setItem('featureDebtTracker',  val); };
+  const handleToggleFeatureNetWorth     = (val) => { setFeatureNetWorth(val);     localStorage.setItem('featureNetWorth',     val); };
+  const handleToggleFeatureQuickAdd     = (val) => { setFeatureQuickAdd(val);     localStorage.setItem('featureQuickAdd',     val); };
 
   const handleTaxSettingsChange = (updated) => {
     const saved = saveTaxSettings(updated);
@@ -289,9 +348,8 @@ const App = () => {
     const toCreate = processDueRecurring();
     if (toCreate.length === 0) return;
     Promise.all(toCreate.map((tx) => addTransaction(tx)))
-      .then(() => getTransactions())
-      .then((txData) => {
-        setTransactions(txData);
+      .then(() => refreshTransactions())
+      .then(() => {
         showToast(`${toCreate.length} recurring transaction${toCreate.length > 1 ? 's' : ''} added`);
       })
       .catch(console.error);
@@ -353,12 +411,12 @@ const App = () => {
 
   const showInfo = (message) => { setInfoMessage(message); setIsInfoOpen(true); };
 
-  const formatDate = (isoString) => {
+  const formatDate = useCallback((isoString) => {
     if (!isoString) return '';
     return new Date(isoString).toLocaleDateString('en-US', {
       year: 'numeric', month: 'numeric', day: '2-digit',
     });
-  };
+  }, []);
 
   const toLocalDateStr = (d) => {
     if (!d) return null;
@@ -369,10 +427,35 @@ const App = () => {
   };
 
   // ─── Data loading ─────────────────────────────────────────────────────────
+  const TRASH_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
+
+  const refreshTransactions = async () => {
+    let raw = await getTransactions();
+
+    // One-time silent migration: backfill accountId on pre-existing transactions.
+    if (!localStorage.getItem('bt_accounts_migrated')) {
+      const missing = raw.filter((t) => !t.accountId);
+      if (missing.length > 0) {
+        await Promise.all(missing.map((t) => editTransaction(t.id, { accountId: DEFAULT_ACCOUNT_ID })));
+        raw = await getTransactions();
+      }
+      localStorage.setItem('bt_accounts_migrated', 'true');
+    }
+
+    const now = Date.now();
+    const expired = raw.filter((t) => t.deletedAt && now - new Date(t.deletedAt).getTime() > TRASH_RETENTION_MS);
+    if (expired.length > 0) {
+      await Promise.all(expired.map((t) => deleteTransaction(t.id)));
+    }
+    const kept = expired.length > 0 ? raw.filter((t) => !expired.includes(t)) : raw;
+    setTransactions(kept.filter((t) => !t.deletedAt));
+    setTrashedTransactions(kept.filter((t) => t.deletedAt));
+    return kept;
+  };
+
   const loadAll = async () => {
     setLoading(true);
-    const [txData, tagData] = await Promise.all([getTransactions(), getTags()]);
-    setTransactions(txData);
+    const [, tagData] = await Promise.all([refreshTransactions(), getTags()]);
     setAllTags(tagData);
     const typeTags = tagData.filter((t) => t.type === activeTab);
     setTags(typeTags);
@@ -415,6 +498,16 @@ const App = () => {
   };
 
   // ─── Transactions ─────────────────────────────────────────────────────────
+  const handleQuickAddParse = () => {
+    const result = parseQuickAdd(quickAddText, allTags);
+    if (result.amount != null) setAmount(String(result.amount));
+    if (result.tag) {
+      if (result.type && result.type !== activeTab) setActiveTab(result.type);
+      setTag(result.tag);
+    }
+    setQuickAddText('');
+  };
+
   const handleAddTransaction = async () => {
     if (!amount) { showInfo('Please enter an amount'); return; }
     if (!tag)    { showInfo('Please select a tag');    return; }
@@ -430,39 +523,49 @@ const App = () => {
       currency:    isForeign ? txCurrency  : undefined,
       origAmount:  isForeign ? enteredAmt  : undefined,
       attachment:  attachment || undefined,
+      accountId:   selectedAccountId || DEFAULT_ACCOUNT_ID,
     });
-    const txData = await getTransactions();
-    setTransactions(txData);
+    await refreshTransactions();
     setAmount('');
     setNotes('');
     setAttachment('');
     showToast('Transaction saved');
   };
 
-  const handleEditTransaction = (transaction) => {
+  const handleEditTransaction = useCallback((transaction) => {
     setEditingTx(transaction);
     setIsEditOpen(true);
-  };
+  }, []);
 
   const saveEditTransaction = async (id, updates) => {
     await editTransaction(id, updates);
-    const txData = await getTransactions();
-    setTransactions(txData);
+    await refreshTransactions();
     showToast('Transaction updated');
   };
 
-  const handleDeleteClick = (transaction) => {
+  const handleDeleteClick = useCallback((transaction) => {
     setDeletingTx(transaction);
     setIsDeleteOpen(true);
-  };
+  }, []);
 
   const confirmDelete = async () => {
-    await deleteTransaction(deletingTx.id);
-    const txData = await getTransactions();
-    setTransactions(txData);
+    await editTransaction(deletingTx.id, { deletedAt: new Date().toISOString() });
+    await refreshTransactions();
     setIsDeleteOpen(false);
     setDeletingTx(null);
     showToast('Transaction deleted', 'delete');
+  };
+
+  const handleRestoreTransaction = async (id) => {
+    await editTransaction(id, { deletedAt: null });
+    await refreshTransactions();
+    showToast('Transaction restored');
+  };
+
+  const handlePurgeTransaction = async (id) => {
+    await deleteTransaction(id);
+    await refreshTransactions();
+    showToast('Transaction permanently deleted', 'delete');
   };
 
   // ─── Tags ─────────────────────────────────────────────────────────────────
@@ -514,6 +617,36 @@ const App = () => {
   const handleAddGoal  = (g)  => setGoals(addGoal(g));
   const handleDelGoal  = (id) => setGoals(deleteGoal(id));
 
+  // ─── Accounts ─────────────────────────────────────────────────────────────
+  const handleAddAccount       = (a)  => setAccounts(addAccount(a));
+  const handleArchiveAccount   = (id) => setAccounts(archiveAccount(id));
+  const handleUnarchiveAccount = (id) => setAccounts(unarchiveAccount(id));
+  const handleDeleteAccount    = (id) => setAccounts(deleteAccount(id));
+  const handleSelectAccount    = (id) => { setSelectedAccountId(id); localStorage.setItem('lastAccountId', id); };
+
+  // ─── Debts ────────────────────────────────────────────────────────────────
+  const handleAddDebt    = (d)  => setDebts(addDebt(d));
+  const handleDeleteDebt = (id) => setDebts(deleteDebt(id));
+
+  const handleLogDebtPayment = async (id, amount) => {
+    const debt = debts.find((d) => d.id === id);
+    if (!debt) return;
+    setDebts(logPayment(id, amount));
+    if (!allTags.some((t) => t.name === 'Debt Payment' && t.type === 'expense')) {
+      await handleAddTag({ name: 'Debt Payment', type: 'expense' });
+    }
+    await addTransaction({
+      type: 'expense', tag: 'Debt Payment', amount, date: new Date().toISOString(),
+      notes: debt.name, accountId: selectedAccountId || DEFAULT_ACCOUNT_ID,
+    });
+    await refreshTransactions();
+    showToast('Payment logged');
+  };
+
+  // ─── Net worth ────────────────────────────────────────────────────────────
+  const handleAddAsset    = (a)  => setAssets(addAsset(a));
+  const handleDeleteAsset = (id) => setAssets(deleteAsset(id));
+
   // ─── Reminders ────────────────────────────────────────────────────────────
   const handleAddReminder     = (r)  => setReminders(addReminder(r));
   const handleDismissReminder = (id) => setReminders(dismissReminder(id));
@@ -521,9 +654,8 @@ const App = () => {
 
   // ─── CSV import ───────────────────────────────────────────────────────────
   const handleCSVImport = async (rows) => {
-    await Promise.all(rows.map((r) => addTransaction(r)));
-    const txData = await getTransactions();
-    setTransactions(txData);
+    await Promise.all(rows.map((r) => addTransaction({ accountId: DEFAULT_ACCOUNT_ID, ...r })));
+    await refreshTransactions();
     showToast(`${rows.length} transactions imported`);
   };
 
@@ -533,10 +665,9 @@ const App = () => {
     if (valid.length < 2) { showInfo('Add at least 2 split rows with tag and amount'); return; }
     await Promise.all(valid.map((r) => addTransaction({
       type: activeTab, tag: r.tag, amount: parseFloat(r.amount),
-      date: date.toISOString(), notes,
+      date: date.toISOString(), notes, accountId: selectedAccountId || DEFAULT_ACCOUNT_ID,
     })));
-    const txData = await getTransactions();
-    setTransactions(txData);
+    await refreshTransactions();
     setSplitMode(false);
     setSplitRows([{ tag: '', amount: '' }, { tag: '', amount: '' }]);
     setNotes('');
@@ -764,8 +895,33 @@ const App = () => {
                 );
               })()}
 
+              {featureQuickAdd && (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={quickAddText}
+                    onChange={(e) => setQuickAddText(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleQuickAddParse(); } }}
+                    placeholder={t('form.quickAddPlaceholder')}
+                    className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none placeholder-gray-400 dark:placeholder-gray-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleQuickAddParse}
+                    disabled={!quickAddText.trim()}
+                    className="px-3 py-2 rounded-lg bg-[var(--primary-500)] active:bg-[var(--primary-600)] text-white text-sm font-medium disabled:opacity-40"
+                  >
+                    {t('form.quickAddFill')}
+                  </button>
+                </div>
+              )}
+
               {/* Row 1: Tag (full width, searchable) */}
               <TagSelect tags={tags} value={tag} onChange={setTag} />
+
+              {featureAccounts && (
+                <AccountSelect accounts={accounts} value={selectedAccountId} onChange={handleSelectAccount} />
+              )}
 
               {/* Currency row — only when exchange rates are available */}
               {exchangeRates?.rates && (
@@ -813,7 +969,7 @@ const App = () => {
                     activeTab === 'income' ? 'bg-green-500 active:bg-green-600' : 'bg-red-500 active:bg-red-600'
                   }`}
                 >
-                  Save
+                  {t('form.save')}
                 </button>
               </div>
 
@@ -823,7 +979,7 @@ const App = () => {
                   type="text"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Note (optional)"
+                  placeholder={t('form.note')}
                   className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none placeholder-gray-400 dark:placeholder-gray-500"
                 />
                 <button
@@ -1016,9 +1172,36 @@ const App = () => {
         {/* ── Balance tab ── */}
         {activeTab === 'balance' && (
           <>
+          {showHealthScore && (
+            <HealthScoreCard
+              transactions={transactions}
+              filterYears={filterYears}
+              filterMonths={filterMonths}
+              budgetLimits={budgetLimits}
+            />
+          )}
           <SpendingInsights transactions={transactions} />
           <HabitsCard transactions={transactions} />
+          {featureAccounts && (
+            <AccountsSummary accounts={accounts} transactions={transactions} onManage={() => setIsAccountsOpen(true)} />
+          )}
+
           <SavingsGoals goals={goals} transactions={transactions} onManage={() => setIsGoalsOpen(true)} />
+
+          {featureDebtTracker && (
+            <DebtTracker debts={debts} onManage={() => setIsDebtTrackerOpen(true)} />
+          )}
+
+          {featureNetWorth && (
+            <NetWorthCard
+              accounts={accounts}
+              transactions={transactions}
+              assets={assets}
+              debts={debts}
+              goldPrices={goldPrices}
+              onManage={() => setIsNetWorthOpen(true)}
+            />
+          )}
           <TagTrendChart transactions={transactions} allTags={allTags} />
 
           {/* ── New tracking features ── */}
@@ -1175,11 +1358,19 @@ const App = () => {
         onToggleOilChart={handleToggleOilChart}
         showCurrencyConverter={showCurrencyConverter}
         onToggleCurrencyConverter={handleToggleCurrencyConverter}
+        showHealthScore={showHealthScore}
+        onToggleHealthScore={handleToggleHealthScore}
         taxSettings={taxSettings}
         onTaxSettingsChange={handleTaxSettingsChange}
         onSetupPin={handleSetupPin}
         onChangePin={handleChangePin}
         onStorageChange={loadAll}
+        onBackup={handleBackup}
+        onRestore={handleRestore}
+        onOpenTrash={handleOpenTrash}
+        trashCount={trashedTransactions.length}
+        onOpenQrShare={handleOpenQrShare}
+        onOpenQrImport={handleOpenQrImport}
         featureRecurring={featureRecurring}         onToggleFeatureRecurring={handleToggleFeatureRecurring}
         featureSplit={featureSplit}                 onToggleFeatureSplit={handleToggleFeatureSplit}
         featureTemplates={featureTemplates}         onToggleFeatureTemplates={handleToggleFeatureTemplates}
@@ -1187,6 +1378,11 @@ const App = () => {
         featureCSVImport={featureCSVImport}         onToggleFeatureCSVImport={handleToggleFeatureCSVImport}
         featureSearchNotes={featureSearchNotes}     onToggleFeatureSearchNotes={handleToggleFeatureSearchNotes}
         featureTagFilter={featureTagFilter}         onToggleFeatureTagFilter={handleToggleFeatureTagFilter}
+        featureAccounts={featureAccounts}           onToggleFeatureAccounts={handleToggleFeatureAccounts}
+        onManageAccounts={() => setIsAccountsOpen(true)}
+        featureDebtTracker={featureDebtTracker}     onToggleFeatureDebtTracker={handleToggleFeatureDebtTracker}
+        featureNetWorth={featureNetWorth}           onToggleFeatureNetWorth={handleToggleFeatureNetWorth}
+        featureQuickAdd={featureQuickAdd}           onToggleFeatureQuickAdd={handleToggleFeatureQuickAdd}
       />
 
       <PinSetupModal
@@ -1213,6 +1409,8 @@ const App = () => {
         onSave={saveEditTransaction}
         transaction={editingTx}
         tags={allTags.filter((t) => t.type === (editingTx?.type || activeTab))}
+        accounts={accounts}
+        featureAccounts={featureAccounts}
       />
 
       <DeleteConfirmModal
@@ -1226,6 +1424,8 @@ const App = () => {
         isOpen={isRecurringOpen}
         onClose={() => setIsRecurringOpen(false)}
         allTags={allTags}
+        accounts={accounts}
+        featureAccounts={featureAccounts}
       />
 
       <BudgetLimitsModal
@@ -1241,6 +1441,35 @@ const App = () => {
         goals={goals}
         onAdd={handleAddGoal}
         onDelete={handleDelGoal}
+      />
+
+      <AccountsModal
+        isOpen={isAccountsOpen}
+        onClose={() => setIsAccountsOpen(false)}
+        accounts={accounts}
+        transactions={transactions}
+        onAdd={handleAddAccount}
+        onArchive={handleArchiveAccount}
+        onUnarchive={handleUnarchiveAccount}
+        onDelete={handleDeleteAccount}
+      />
+
+      <DebtTrackerModal
+        isOpen={isDebtTrackerOpen}
+        onClose={() => setIsDebtTrackerOpen(false)}
+        debts={debts}
+        onAdd={handleAddDebt}
+        onDelete={handleDeleteDebt}
+        onLogPayment={handleLogDebtPayment}
+      />
+
+      <NetWorthModal
+        isOpen={isNetWorthOpen}
+        onClose={() => setIsNetWorthOpen(false)}
+        assets={assets}
+        goldPrices={goldPrices}
+        onAdd={handleAddAsset}
+        onDelete={handleDeleteAsset}
       />
 
       <RemindersModal
@@ -1274,6 +1503,37 @@ const App = () => {
         onClose={() => setIsCSVOpen(false)}
         allTags={allTags}
         onImport={handleCSVImport}
+      />
+
+      <TrashModal
+        isOpen={isTrashOpen}
+        onClose={() => setIsTrashOpen(false)}
+        trashedTransactions={trashedTransactions}
+        onRestore={handleRestoreTransaction}
+        onPurge={handlePurgeTransaction}
+      />
+
+      <QRShareModal
+        isOpen={isQrShareOpen}
+        onClose={() => setIsQrShareOpen(false)}
+      />
+
+      <QRImportModal
+        isOpen={isQrImportOpen}
+        onClose={() => setIsQrImportOpen(false)}
+        onImported={handleQrImported}
+      />
+
+      <BackupExportModal
+        isOpen={isBackupOpen}
+        onClose={() => setIsBackupOpen(false)}
+        onExported={() => showToast('Backup downloaded')}
+      />
+
+      <BackupRestoreModal
+        isOpen={isRestoreOpen}
+        onClose={() => setIsRestoreOpen(false)}
+        onRestored={() => showToast('Backup restored')}
       />
 
       {/* Overdue reminders toast */}

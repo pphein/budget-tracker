@@ -46,6 +46,8 @@ export const deleteTag = async (id) => {
   save('tags', load('tags').filter((t) => t.id !== id));
 };
 
+export const clearTags = async () => save('tags', []);
+
 export const syncDefaultTags = async () => {
   ensureSeeded();
   const tags        = load('tags');
@@ -61,12 +63,14 @@ export const syncDefaultTags = async () => {
 // ── Transactions ───────────────────────────────────────────────────────────────
 export const getTransactions = async () => load('transactions');
 
-export const addTransaction = async ({ type, tag, amount, date, notes, currency, origAmount, attachment }) => {
+export const addTransaction = async ({ type, tag, amount, date, notes, currency, origAmount, attachment, deletedAt, accountId }) => {
   const txs = load('transactions');
   const record = { id: nextId(txs), type, tag, amount: parseFloat(amount), date, notes: notes || '' };
   if (currency)           record.currency   = currency;
   if (origAmount != null) record.origAmount  = origAmount;
   if (attachment)         record.attachment  = attachment;
+  if (deletedAt)          record.deletedAt   = deletedAt;
+  if (accountId)          record.accountId   = accountId;
   save('transactions', [...txs, record]);
 };
 
@@ -79,3 +83,5 @@ export const editTransaction = async (id, updates) => {
 export const deleteTransaction = async (id) => {
   save('transactions', load('transactions').filter((t) => t.id !== id));
 };
+
+export const clearTransactions = async () => save('transactions', []);
